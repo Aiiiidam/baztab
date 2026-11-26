@@ -355,3 +355,9 @@
 [lang='fa'] table {
   font-variant-numeric: tabular-nums;
 }
+
+/* Password fields have their own show/hide button; hide Edge's built-in reveal icon. */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}

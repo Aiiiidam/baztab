@@ -6,10 +6,13 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/__tests__/**/*.test.ts'],
+    // Real-database tests run with npm run test:integration.
+    exclude: ['src/__tests__/integration/**'],
     setupFiles: ['src/__tests__/setup.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/services/**', 'src/lib/**', 'src/actions/**'],
+      // Services run against real PostgreSQL; their gate is in vitest.integration.config.mts.
+      include: ['src/lib/**', 'src/actions/**'],
       exclude: [
         'src/**/*.d.ts',
         'src/__tests__/**',

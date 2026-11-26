@@ -4,17 +4,18 @@ import type { PrismaClient } from '@prisma/client';
 // `server-only` throws outside a React Server Components bundle; make it inert here.
 vi.mock('server-only', () => ({}));
 
-// Validated env — deterministic values so tests never read a real .env.
-vi.mock('@/lib/env', () => ({
-  env: {
-    NODE_ENV: 'test',
-    DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
-    SESSION_MAX_AGE_DAYS: 7,
-    SKIP_AUTH: false,
-    LOG_LEVEL: 'silent',
-    PRISMA_LOG_QUERIES: false,
-  },
-}));
+// Validated env — the real schema's defaults with deterministic values, so tests never read a real .env.
+vi.mock('@/lib/env', async () => {
+  const { parseEnv } = await import('@/lib/env-schema');
+  return {
+    env: parseEnv({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+      APP_ORIGIN: 'http://localhost:3000',
+      LOG_LEVEL: 'silent',
+    }),
+  };
+});
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((url: string) => {
@@ -41,6 +42,7 @@ vi.mock('next/headers', () => ({
     set: vi.fn(),
     delete: vi.fn(),
   })),
+  headers: vi.fn(async () => new Headers({ 'x-forwarded-for': '203.0.113.7' })),
 }));
 
 vi.mock('next/cache', () => ({

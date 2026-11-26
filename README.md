@@ -13,20 +13,26 @@ locale profile (see "Locale and direction" below). Rules for coding agents are i
 
 ## Quick start
 
-Requirements: Node LTS (`.nvmrc`), Docker (for the local database) or any PostgreSQL 14+.
+Requirements: Node LTS (`.nvmrc`), PostgreSQL 14+ (Docker via `npm run db:up`, or a local install),
+and ffmpeg/ffprobe on the PATH (or `FFPROBE_PATH` in `.env`) for upload validation.
 
 ```bash
 cp .env.example .env      # DATABASE_URL points at the docker-compose Postgres
 npm ci && npm run db:generate
 npm run db:up             # Postgres in Docker (or edit DATABASE_URL in .env)
 npm run db:deploy         # apply migrations
-npm run db:seed           # admin / admin123 (development only)
+npm run db:seed           # two synthetic organizations; prints one-time initial passwords (dev only)
 npm run dev               # http://localhost:3000
+npm run worker:dev        # analysis worker (second terminal), deterministic fake engine
 ```
 
-The starter's username sign-in, `/admin/users` and the seeded `admin` / `admin123` account are
-temporary: the organization/membership sign-in in `docs/decisions/008-organization-membership-auth.md`
-replaces them, and none of them may reach a deployed environment.
+Sign in with the organization national ID, mobile `09120000000` and the printed initial password; you
+are asked to choose a new one. Members are provisioned with the operator CLI, never through the UI:
+`npm run operator -- provision --national-id <id> --name <name> --mobile <mobile>` (also `reset`,
+`revoke`, `revoke-org`, `reprocess`, `delete-org`; see `scripts/operator.ts`).
+
+Upload the synthetic recordings in `e2e/fixtures/audio/` from **فهرست تماس‌ها** to see the whole flow.
+`docker compose up --build` runs the same three images that deploy (migrate → web + worker).
 
 **No database?** Set `SKIP_AUTH=true` in `.env` to skip login and run UI-only (development only).
 
@@ -57,13 +63,14 @@ to get wrong.
 | Locale   | One profile (`src/lib/locale.ts`) drives direction, calendar, numerals, time zone, currency; `t()` messages; Intl formatting |
 | Backend  | Server Actions + route handlers, zod validation, framework-free services                                                     |
 | Database | PostgreSQL via Prisma 6, migrations committed                                                                                |
-| Auth     | Cookie sessions (hashed tokens), bcrypt, login throttling, ADMIN / USER roles                                                |
+| Auth     | Organization national ID + mobile + password, Argon2id, forced initial-password change, PostgreSQL throttle, no roles        |
 | Tests    | Vitest (unit, mocked Prisma), Playwright (e2e against a real DB, locale-aware)                                               |
 | Ops      | Docker multi-stage image, docker-compose, GitHub Actions CI, Renovate                                                        |
 
-Planned for Phase 1 (decisions 008–011): organization memberships with Argon2id, a PostgreSQL job
-queue and private analysis worker with self-managed inference, Supabase PostgreSQL and private
-storage, Hamravesh Darkube for the web and worker containers.
+Phase 1 (decisions 008–011, 013): a PostgreSQL job queue and a private analysis worker behind
+self-managed inference interfaces (today a deterministic fake engine; the real Persian model is plan
+task M3-T8), Supabase PostgreSQL and private S3 storage, separate web / worker / migrate images for
+Hamravesh Darkube. Status per acceptance row: [`docs/acceptance-report.md`](docs/acceptance-report.md).
 
 ## Project structure
 
@@ -71,10 +78,10 @@ storage, Hamravesh Darkube for the web and worker containers.
 src/
   app/
     layout.tsx        document shell (html/body, font, theme, direction)
-    (auth)/login/     bare pages
-    (app)/            authenticated shell; admin/ is admin-only
-      admin/users/    ← reference module UI
-    api/health/       readiness probe (no auth)
+    (auth)/           bare pages: login/, change-password/
+    (app)/            authenticated shell: reports/issues/, calls/ (list, [id] detail)
+    api/              calls/ (uploads, list, detail, audio), reports/issues/, health/ (+ live/)
+  worker/             analysis worker (main.ts → index.ts)
   actions/            server actions: authorise → validate → service → revalidate
   services/           business logic, framework-free
   components/         ui/ primitives · UiComponents.tsx barrel · layout/ shell
@@ -83,14 +90,14 @@ src/
   __tests__/          unit tests, factories, prisma mock
 prisma/               schema, migrations, seed · prisma.config.ts at the root
 e2e/                  Playwright config and specs
-scripts/              new-module.mjs scaffold · rtl-smoke-check.mjs
+scripts/              operator.ts CLI · eval/ harness · fixtures and probe · migration guard · scaffold
 docs/                 PRD, specs/ (Phase 1 specifications), decision records, checklists
 .claude/              settings.json + vendored skills for Claude Code
 AGENTS.md             rules for any coding agent · CLAUDE.md adds the Claude workflow
 ```
 
-The **Users** module (`lib/validations/user.ts` → `services/user.service.ts` → `actions/user.actions.ts`
-→ `app/(app)/admin/users/`) is the pattern every feature copies. `npm run new:module <name>` scaffolds
+The **Auth** module (`lib/validations/{auth,password}.ts` → `services/auth.service.ts` →
+`actions/auth.actions.ts` → `app/(auth)/`) is the reference shape; `calls` and `review` follow it. `npm run new:module <name>` scaffolds
 a new one in the same shape; `AGENTS.md` walks through the steps.
 
 ## Common tasks
@@ -99,15 +106,14 @@ a new one in the same shape; `AGENTS.md` walks through the steps.
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Add a feature module                | `npm run new:module <name>`, then follow the printed next steps (see "Building a feature").                                                                               |
 | Add a page                          | Create `src/app/(app)/<route>/page.tsx`. It is behind login automatically; call `requireAuth()` in the page and read data through a service.                              |
-| Add an admin-only page              | Put it under `src/app/(app)/admin/`; that layout runs `requireAdmin()`. Call it in the page too (layouts and pages render in parallel).                                   |
 | Add a table                         | Add the model to `prisma/schema.prisma`, run `npm run db:migrate -- --name <change>`, commit the migration folder.                                                        |
 | Add a user-facing string            | Add a key to the dictionary in `src/messages/`, read it with `t('key')` (or `tp()` for plurals). Never inline text.                                                       |
-| Add a form                          | `react-hook-form` + `zodResolver` + `FormField`, schema in `src/lib/validations/`. Copy `src/app/(app)/admin/users/create-user-dialog.tsx`.                               |
+| Add a form                          | `react-hook-form` + `zodResolver` + `FormField`, schema in `src/lib/validations/`. See `src/app/(auth)/login/login-form.tsx`.                                             |
 | Add a shadcn component              | `npx shadcn@latest add <name>` (`components.json` is in RTL mode), export it from `src/components/UiComponents.tsx`, then `npm run lint:rtl` to catch physical utilities. |
-| Add a sidebar item                  | Edit `NAV_GROUPS` in `src/lib/navigation.ts`; the header title follows.                                                                                                   |
+| Add a sidebar item                  | Edit `NAV_ITEMS` in `src/lib/navigation.ts`; the header title follows.                                                                                                    |
 | Change the app name or logo         | `src/lib/app-config.ts` (name, description) and `src/components/layout/Logo.tsx` (mark).                                                                                  |
 | Change the brand colours            | The hue/saturation variables at the top of `src/app/globals.css` (Baztab purple: hue 270, 55 %; tokens in `docs/specs/design-system.md`).                                 |
-| Change the seeded admin             | Set `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` before `npm run db:seed`, or reset the password from Admin → Users after login.                                         |
+| Give someone access                 | `npm run operator -- provision …` prints a one-time initial password to deliver out of band.                                                                              |
 | Run e2e beside a running dev server | `PORT=3001 npm run test:e2e`                                                                                                                                              |
 | Update dependencies                 | `npm run deps:update` (minor/patch) or `npm run deps:update:major` (interactive). Renovate opens the same PRs weekly.                                                     |
 
@@ -129,9 +135,9 @@ a new one in the same shape; `AGENTS.md` walks through the steps.
 
 One locale profile per project, set once in `src/lib/locale.ts`:
 
-| Profile | Direction | Intl tag | Calendar  | Numerals       | Time zone     | Currency             |
-| ------- | --------- | -------- | --------- | -------------- | ------------- | -------------------- |
-| `fa`    | RTL       | `fa-IR`  | Jalali    | Persian digits | `Asia/Tehran` | IRR (shown as toman) |
+| Profile | Direction | Intl tag | Calendar | Numerals       | Time zone     | Currency             |
+| ------- | --------- | -------- | -------- | -------------- | ------------- | -------------------- |
+| `fa`    | RTL       | `fa-IR`  | Jalali   | Persian digits | `Asia/Tehran` | IRR (shown as toman) |
 
 `<html lang dir>`, the `DirectionProvider`, the font, Playwright's browser locale, every formatter and
 every `t()` string follow the profile. Rules that keep this working (logical utilities,

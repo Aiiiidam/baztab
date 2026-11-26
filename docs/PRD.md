@@ -6,8 +6,7 @@
 > decisions and update it when a change is product-visible (new module, route, behaviour, data
 > model). Keep it a reference, not a changelog. Full detail lives in `docs/specs/`
 > ([index](specs/README.md)); when this file and the technical specification disagree, the
-> technical specification wins. Lines marked _(template)_ describe code inherited from the starter
-> that Phase 1 replaces.
+> technical specification wins.
 
 ## What it is
 
@@ -32,9 +31,9 @@ workspace and can do every task:
 Members sign in with **organization national ID (شناسه ملی سازمان, 11 digits) + mobile + password**.
 Data is isolated per organization; scope always comes from the session.
 
-_(template)_ The starter ships `ADMIN` / `USER` roles, username sign-in and `/admin/users`. They stay
-only until the membership auth slice replaces them, and must not reach the production build
-(decision [008](decisions/008-organization-membership-auth.md)).
+Operators work through `npm run operator -- provision | reset | revoke | revoke-org`; each command
+is audited without secrets. The starter's username accounts, roles, `/admin/users`, `/components`
+gallery and seeded admin were removed (decision [008](decisions/008-organization-membership-auth.md)).
 
 ## Locale
 
@@ -46,29 +45,27 @@ Persian and Latin digits are accepted in identifiers, mobile numbers and call-ID
 
 <!-- Add a line per module or route as it lands. Keep it to what exists today. -->
 
-What exists today:
+What exists today (see `docs/specs/design-scope.md` for screens and states):
 
-| Route          | Who       | What                                                                                  |
-| -------------- | --------- | ------------------------------------------------------------------------------------- |
-| `/login`       | everyone  | _(template)_ Username/password sign-in (cookie session, throttled after 5 failures)   |
-| `/`            | signed-in | _(template)_ Placeholder home                                                         |
-| `/admin/users` | Admin     | _(template)_ List, create, edit, activate/deactivate users, reset passwords           |
-| `/components`  | signed-in | _(template)_ Component gallery / visual regression surface; excluded from production  |
-| `/api/health`  | ops       | Readiness probe (database check), no auth                                             |
+| Route / endpoint           | Who                 | What                                                                                                                                                        |
+| -------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/login`                   | everyone            | ورود به بازتاب: national ID + mobile + password, Persian-keyboard warning, forgotten-password help                                                          |
+| `/change-password`         | must-change session | Forced replacement of the operator-issued initial password; every other route redirects here until it is replaced                                           |
+| `/`                        | member              | Redirects to `/reports/issues`                                                                                                                              |
+| `/reports/issues`          | member              | گزارش مشکلات (landing page): analyzed-call total and issue groups ranked by distinct eligible calls for a Jalali range (default last 30 days); drill-down   |
+| `/calls`                   | member              | فهرست تماس‌ها: cursor paging, search by call ID / filename / issue, state filter, removable issue and range chips; بارگذاری فایل‌های تماس dialog            |
+| `/calls/[id]`              | member              | جزئیات تماس: state and ready time, failure with تلاش دوباره, findings, AI scores, transcript + audio with timestamp seeking, optional review, expiry notice |
+| `POST /api/calls/uploads`  | member, same origin | Streaming multipart upload of one MP3 (≤ 10 MiB); accepted / duplicate / in-progress / rejected with a stable code and the expected ready time              |
+| `GET /api/calls`           | member              | The list contract (cursor, `q`, `state`, `issue`, `from`, `to`)                                                                                             |
+| `GET /api/calls/:id`       | member              | Call detail; generic 404 for foreign or missing IDs                                                                                                         |
+| `GET /api/calls/:id/audio` | member              | Same-origin Range playback (200/206/416), `private, no-store`, access-logged                                                                                |
+| `GET /api/reports/issues`  | member              | Report data with a drill-down filter per rank                                                                                                               |
+| `/api/health`              | ops                 | Readiness probe (database check), no auth                                                                                                                   |
 
-Planned for Phase 1 (see `docs/specs/design-scope.md` for screens and states; paths are proposals):
-
-| Screen / endpoint                                 | What                                                                                                                                   |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| ورود به بازتاب (`/login`)                         | National ID + mobile + password; forced change of the operator-issued initial password; Persian-keyboard warning on password fields   |
-| گزارش مشکلات (`/reports/issues`, landing page)    | Analyzed-call total and issue groups ranked by distinct eligible calls for a Jalali date range; each rank opens the filtered call list |
-| فهرست تماس‌ها (`/calls`)                          | Search by call ID / filename / issue, filter by state, issue and date; removable issue filter; تاریخ بارگذاری label for fallback dates |
-| بارگذاری فایل‌های تماس (from `/calls`)            | Batch MP3 upload (≤ 50 files, ≤ 10 MiB each), per-file accepted / duplicate / rejected result, expected ready time                     |
-| جزئیات تماس (`/calls/[id]`)                       | Findings, AI scores, transcript + audio with timestamp seeking, retry, optional review, expiry notice                                  |
-| `POST /api/calls/uploads`                         | Streaming multipart upload of one MP3                                                                                                  |
-| `GET /api/calls`, `GET /api/calls/:id`            | Cursor-paged search; call detail with date source, state, expected ready time, audio/transcript availability                          |
-| `GET /api/calls/:id/audio`                        | Session-authorized same-origin Range playback (200/206/416), `private, no-store`                                                       |
-| `GET /api/reports/issues`                         | Report data for date bounds with drill-down filters                                                                                    |
+The **analysis worker** (`npm run worker:dev`, image entry `dist/worker.mjs`) claims queued jobs, transcribes and
+analyzes with the configured self-managed engine (today the deterministic `fake` engine; the real model is plan
+task M3-T8), publishes revisions, and runs maintenance: lease reclaim, abandoned-upload reconcile, retention
+expiry and object deletion, storage-ledger reconcile, session and rate-limit cleanup.
 
 Sidebar (right side): **گزارش مشکلات**, **فهرست تماس‌ها**, **خروج**.
 
@@ -84,44 +81,42 @@ Sidebar (right side): **گزارش مشکلات**, **فهرست تماس‌ها*
 - **Retention:** audio, transcript, explanations and evidence are removed after the configured number of days (pilot **10**, target 90 after a storage upgrade). Categories, outcomes, ratings, the original filename and the access log remain; historical counts do not change. Call detail shows the removal date before expiry.
 - **Storage budget:** 800 MB app-managed budget on Supabase Free; alert at 70 %, pause uploads at 100 % with a clear message.
 
-_(template)_ Today: deactivating a user or resetting their password ends all their sessions; an admin
-cannot change their own role or deactivate themselves; sessions last `SESSION_MAX_AGE_DAYS` (default 7).
+- **Sign-in:** an operator reset or revoke ends every session of the member at once; revoking an organization ends all of its sessions. Sessions expire after 24 h idle or 7 days absolute. An initial password expires after 7 days and cannot be chosen again as the new password.
 
 ## Data model
 
 <!-- One line per model. Point to prisma/schema.prisma for fields. -->
 
-Today (`prisma/schema.prisma`), _(template)_:
-
-- `User` — `username` (unique), `passwordHash`, `fullName`, `role` (`ADMIN` \| `USER`), `isActive`, `lastLoginAt`
-- `Session` — `tokenHash` (SHA-256 of the cookie token, unique), `expiresAt`, cascades on user delete
-
-Planned (tech spec §5; opaque IDs, UTC instants, tenant-consistent composite keys):
+Today (`prisma/schema.prisma`; opaque IDs, UTC instants, tenant-consistent composite keys):
 
 - `Organization` — unique normalized national ID (string, leading zeros kept), name, active, retention days
 - `Membership` — organization, normalized mobile (unique per organization), Argon2id hash, must-change flag, initial-password expiry, activation/revocation
-- `Session` — membership, token hash, idle (24 h) and absolute (7 d) expiry
-- `Call` — organization, accepted-at, nullable filename date, effective date, date source, original filename (restricted), state, active revision, row version
-- `Recording` — call, generated object key, bytes, duration, content type, expiry, storage state
+- `MemberSession` — membership (composite tenant FK), token hash, idle (24 h) and absolute (7 d) expiry
+- `AuthRateLimit` — hashed account/source key, failure count, window, expiry
+- `OperatorAudit` — operator, action, target IDs, structured detail (no secrets)
+
+- `Call` — organization, accepted-at, nullable filename date, effective date, date source, original filename (restricted), state, failure code, active revision, row version
+- `Recording` — call, generated object key, bytes, duration, expiry, storage state (pending / stored / expired / deleted)
 - `RecordingFingerprint` — organization + SHA-256 (unique), owning call; deleted at expiry
-- `ProcessingJob` — call, operation, attempt, state, next run, lease token/expiry, error code; one active job per call and operation
-- `TranscriptSegment` — revision, index, start/end ms, speaker (agent / customer / unknown), Persian text
-- `AnalysisRevision` — call, version, reason (initial / retry / reprocess / correction), parent, schema/model/prompt/rubric/taxonomy versions, status
-- `IssueCategory`, `IssueFinding` — stable tenant-scoped categories; finding with category, outcome, eligibility, explanation, evidence refs
-- `Score`, `Evidence` — one rating per criterion per revision, explanation, validated segment refs
+- `ProcessingJob` — call, trigger, attempt, state, run-after, lease token/expiry, stage, error code; one active job per call
+- `Transcript`, `TranscriptSegment` — model version; ordered segments with start/end ms, speaker (agent / customer / unknown), Persian text
+- `AnalysisRevision` — call, version, reason (initial / retry / reprocess / correction), status (published / candidate), parent, transcript, schema/model/prompt/rubric/taxonomy versions, reason text, review
+- `IssueCategory`, `IssueFinding` — stable tenant-scoped categories (draft taxonomy v0); finding with category, outcome, stored `eligible` and `hasEvidence` (set at publish), explanation, human-set flags
+- `Score`, `Evidence` — one rating per criterion per revision; evidence references transcript segments
 - `CorrectionAudit` — source/result revision, actor, field, previous/new structured value, time
-- Access log and operator audit — playback and transcript views; provisioning actions (no secrets)
+- `AccessLog` — playback sessions and transcript views
+- `StorageLedger` (one project-wide row), `EgressUsage` (per month) — storage budget and egress tracking
 
 ## Server actions
 
-| Action                | Auth  | Description                                       |
-| --------------------- | ----- | ------------------------------------------------- |
-| `loginAction`         | none  | _(template)_ Validate credentials, open a session |
-| `logoutAction`        | user  | Revoke the current session                        |
-| `createUserAction`    | admin | _(template)_ Create a user                        |
-| `updateUserAction`    | admin | _(template)_ Change name / role                   |
-| `setUserActiveAction` | admin | _(template)_ Activate or deactivate               |
-| `resetPasswordAction` | admin | _(template)_ Set a new password, revoke sessions  |
+| Action                  | Auth                | Description                                                         |
+| ----------------------- | ------------------- | ------------------------------------------------------------------- |
+| `signInAction`          | none                | Validate identifiers and password, throttle, open a session         |
+| `changePasswordAction`  | must-change session | Replace the initial password, clear the flag, revoke other sessions |
+| `logoutAction`          | member              | Revoke the current session                                          |
+| `retryCallAction`       | member              | تلاش دوباره for a recoverable failure; converges on one job         |
+| `confirmReviewAction`   | member              | تأیید بازبینی on the active revision                                |
+| `saveCorrectionsAction` | member              | Child revision with corrected categories, outcomes and ratings      |
 
 ## Non-functional
 
@@ -138,7 +133,7 @@ Planned (tech spec §5; opaque IDs, UTC instants, tenant-consistent composite ke
 
 Phase 1, in the order of tech spec §12 ("Implementation order"):
 
-1. **Infrastructure proof** — disposable web + private worker on Darkube; Darkube → Supabase database/storage access; Range streaming; isolated inference run on synthetic audio; per-call feasibility gate; measure the real export bitrate.
+1. **Infrastructure proof** (runs in parallel with the vertical-slice work; it needs external accounts and samples, not application code) — disposable web + private worker on Darkube; Darkube → Supabase database/storage access; Range streaming; isolated inference run on synthetic audio; per-call feasibility gate; measure the real export bitrate.
 2. **Vertical slice** —
    1. Organization/membership auth replacing the template users (operator CLI, initial password, forced change, national-ID validator, Postgres rate limits), and removal of `/admin/users`, `/components` and seeded credentials from production (decision 008).
    2. Tenant scoping (decision 009).

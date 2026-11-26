@@ -78,6 +78,16 @@ const eslintConfig = defineConfig([
       },
     ],
   ),
+  // worker/ → same rules as services: it reuses them outside Next.js (decision 010)
+  layer(
+    ['src/worker/**/*.ts'],
+    [
+      {
+        group: ['next', 'next/*', 'react', 'react-dom', '@/components/*', '@/actions/*', '@/app/*'],
+        message: 'The worker runs outside Next.js. It may use services and lib only.',
+      },
+    ],
+  ),
   // actions/ → thin: no UI, no direct Prisma
   layer(
     ['src/actions/**/*.ts'],
@@ -110,6 +120,7 @@ const eslintConfig = defineConfig([
     'coverage/**',
     'playwright-report/**',
     'test-results/**',
+    'dist/**',
     'next-env.d.ts',
     '.claude/**',
     '.beads/**',

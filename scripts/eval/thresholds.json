@@ -1,0 +1,12 @@
+{
+  "status": "PROPOSED — not approved. Binding only after the product owner and support lead approve them (open decision D8); see docs/evaluation/thresholds.md.",
+  "issueRecallMin": 0.8,
+  "issuePrecisionMin": 0.8,
+  "outcomeAgreementMin": 0.75,
+  "criterionExactMin": 0.7,
+  "criterionWithinOneMin": 0.9,
+  "medianWerMax": 0.3,
+  "evidenceValidityMin": 1,
+  "meanSecondsPer3MinCallMax": 360,
+  "maxSecondsPer3MinCallMax": 600
+}

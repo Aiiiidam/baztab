@@ -231,6 +231,20 @@ export function formatDate(date: Nullable<DateInput>, opts: DateFormatOptions = 
   return formatDateWith({ dateStyle: 'medium' }, date, opts);
 }
 
+/**
+ * A calendar date (PostgreSQL DATE, `YYYY-MM-DD` or a Date at UTC midnight) in
+ * the profile's calendar with numeric fields: "۱۴۰۵/۰۷/۲۷". Formatted in UTC so
+ * the viewer's time zone can never move it to another day.
+ */
+export function formatCallDate(date: Nullable<DateInput>, opts: DateFormatOptions = {}): string {
+  const input =
+    typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00Z` : date;
+  return formatDateWith({ year: 'numeric', month: '2-digit', day: '2-digit' }, input, {
+    ...opts,
+    timeZone: 'UTC',
+  });
+}
+
 /** Date and time, medium date + short time by default. */
 export function formatDateTime(date: Nullable<DateInput>, opts: DateFormatOptions = {}): string {
   return formatDateWith({ dateStyle: 'medium', timeStyle: 'short' }, date, opts);

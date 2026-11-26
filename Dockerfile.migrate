@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1.7
+# baztab-migrate (decision 011): one-shot `prisma migrate deploy`, run once per
+# release before the compatible web and worker roll out. Uses
+# DATABASE_URL_MIGRATE (mapped in prisma.config.ts); never given to web or worker.
+
+FROM node:26-bookworm-slim
+WORKDIR /app
+ENV PRISMA_ENGINES_MIRROR=https://registry.npmmirror.com/-/binary/prisma
+RUN apt-get -o Acquire::Check-Valid-Until=false update -y \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/* \
+    && addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 migrate
+
+COPY package.json ./
+# Only the CLI and what prisma.config.ts imports, at the versions in the lockfile.
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --no-save --no-package-lock --no-audit --no-fund \
+      "prisma@$(node -p "require('./package.json').devDependencies.prisma")" \
+      "dotenv@$(node -p "require('./package.json').devDependencies.dotenv")"
+
+COPY prisma.config.ts ./
+COPY prisma/schema.prisma ./prisma/schema.prisma
+COPY prisma/migrations ./prisma/migrations
+COPY prisma/supabase-ca.crt ./prisma/supabase-ca.crt
+
+USER migrate
+CMD ["npx", "prisma", "migrate", "deploy"]

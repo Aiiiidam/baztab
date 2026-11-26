@@ -3,12 +3,12 @@
 The source documents for Phase 1. `docs/PRD.md` is the short reference that agents read first; these
 files hold the full detail behind it. When they disagree, the order below decides.
 
-| Document                                 | What it settles                                                                                                                 | Precedence |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [tech-spec.md](tech-spec.md)             | Architecture, auth, data model and invariants, upload/date/media rules, worker and queue, AI, retention, deployment, acceptance | 1 (wins)   |
-| [product-spec.md](product-spec.md)       | Requirements P1-01 … P1-07, call analysis fields, scoring rubric, pilot checks                                                  | 2          |
-| [design-scope.md](design-scope.md)       | Screens, Persian labels, required states, layout and accessibility, design handoff checks                                       | 2          |
-| [design-system.md](design-system.md)     | Visual tokens: brand purple `#7B38C1`, YekanBakh type scale, spacing, radii, single-tier shadow                                 | 3          |
+| Document                             | What it settles                                                                                                                 | Precedence |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [tech-spec.md](tech-spec.md)         | Architecture, auth, data model and invariants, upload/date/media rules, worker and queue, AI, retention, deployment, acceptance | 1 (wins)   |
+| [product-spec.md](product-spec.md)   | Requirements P1-01 … P1-07, call analysis fields, scoring rubric, pilot checks                                                  | 2          |
+| [design-scope.md](design-scope.md)   | Screens, Persian labels, required states, layout and accessibility, design handoff checks                                       | 2          |
+| [design-system.md](design-system.md) | Visual tokens: brand purple `#7B38C1`, YekanBakh type scale, spacing, radii, single-tier shadow                                 | 3          |
 
 Notes:
 

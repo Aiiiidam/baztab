@@ -5,7 +5,13 @@ test('GET /api/health answers without a session cookie', async ({ request }) => 
   expect(response.status()).toBe(200);
   const body = await response.json();
   expect(body.status).toBe('healthy');
-  expect(body.checks.database).toBe('ok');
+  expect(body.checks).toEqual({ database: 'ok', schema: 'ok' });
+});
+
+test('GET /api/health/live answers without touching the database', async ({ request }) => {
+  const response = await request.get('/api/health/live');
+  expect(response.status()).toBe(200);
+  expect((await response.json()).status).toBe('alive');
 });
 
 test('security headers are present', async ({ request }) => {

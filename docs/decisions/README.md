@@ -16,3 +16,4 @@ them. One file per decision, a paragraph or two each. Add a new one when you cha
 | [009](009-tenant-scoping-without-roles.md)      | Organization-scoped records from the session; no roles           |
 | [010](010-postgres-queue-and-worker.md)         | PostgreSQL job queue and one private worker for AI processing    |
 | [011](011-darkube-supabase-deployment.md)       | Separate web, worker and migration releases; Darkube + Supabase  |
+| [013](013-phase-1-implementation-choices.md)    | Phase 1 implementation choices and deviations, per milestone     |
