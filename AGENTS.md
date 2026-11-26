@@ -45,19 +45,24 @@ any generic form; the last column says where it would go so the layering stays i
 The Phase 1 specs need these gaps filled. Each row says where the work goes; the decision record
 explains any rule it changes. Build them in the PRD's roadmap order.
 
-| Need (spec)                                                         | Where it goes                                                                                                                                                       |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Need (spec)                                                                    | Where it goes                                                                                                                                                   |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Organization + membership sign-in, initial password, forced change (§4, P1-07) | `Organization` / `Membership` models replace `User`; `auth.service.ts` + `@/lib/auth`; Argon2id; Postgres rate-limit table; operator CLI under `scripts/` (008) |
-| Organization national ID (11 digits + check digit)                  | New validator beside `@/lib/validators/iran`; do not reuse the 10-digit personal-code check                                                                         |
-| Tenant isolation, no roles (§4.6, §5)                               | `organizationId` on every tenant table, composite FKs, scope from the session in every service query; `requireAdmin()` leaves product code (009)                    |
-| MP3 upload, fingerprint, filename date (§6, P1-01)                  | Streaming route handler `app/api/calls/uploads/route.ts` → `call.service.ts`; storage behind a `storage.service.ts` interface (Supabase S3); ffprobe validation     |
-| Audio playback (§6)                                                 | `app/api/calls/[id]/audio/route.ts`, Range 200/206/416, `private, no-store`, access-log entry                                                                       |
-| Queue, worker, AI pipeline (§7, §8, P1-02, P1-03, P1-05)            | `ProcessingJob` table; worker entrypoint (proposed `src/worker/`) using `services/`; inference adapter behind an interface; schema-validated output (010)           |
-| Revisions, review, corrections (§5, P1-06)                          | `AnalysisRevision` + `CorrectionAudit`; correction is a server action with optimistic concurrency on the active revision                                            |
-| Issue report and drill-down (§9, P1-04)                             | `report.service.ts` with one eligibility predicate shared by report and call list; Jalali range via the existing date-range picker                                 |
-| Paged, searchable call list                                         | Cursor paging in the service and table together; see the UI row above                                                                                              |
-| Retention, deletion, storage budget (§10)                           | Worker maintenance task + config in `env.ts`; authorization checks expiry on every read                                                                             |
-| Separate web / worker / migrate releases, Darkube + Supabase (§11)  | Second Dockerfile for the worker; migrations leave web start-up; new env vars validated in `env.ts` (011)                                                          |
+| Organization national ID (11 digits + check digit)                             | New validator beside `@/lib/validators/iran`; do not reuse the 10-digit personal-code check                                                                     |
+| Tenant isolation, no roles (§4.6, §5)                                          | `organizationId` on every tenant table, composite FKs, scope from the session in every service query; `requireAdmin()` leaves product code (009)                |
+| MP3 upload, fingerprint, filename date (§6, P1-01)                             | Streaming route handler `app/api/calls/uploads/route.ts` → `call.service.ts`; storage behind a `storage.service.ts` interface (Supabase S3); ffprobe validation |
+| Audio playback (§6)                                                            | `app/api/calls/[id]/audio/route.ts`, Range 200/206/416, `private, no-store`, access-log entry                                                                   |
+| Queue, worker, AI pipeline (§7, §8, P1-02, P1-03, P1-05)                       | `ProcessingJob` table; worker entrypoint (proposed `src/worker/`) using `services/`; inference adapter behind an interface; schema-validated output (010)       |
+| Revisions, review, corrections (§5, P1-06)                                     | `AnalysisRevision` + `CorrectionAudit`; correction is a server action with optimistic concurrency on the active revision                                        |
+| Issue report and drill-down (§9, P1-04)                                        | `report.service.ts` with one eligibility predicate shared by report and call list; Jalali range via the existing date-range picker                              |
+| Paged, searchable call list                                                    | Cursor paging in the service and table together; see the UI row above                                                                                           |
+| Retention, deletion, storage budget (§10)                                      | Worker maintenance task + config in `env.ts`; authorization checks expiry on every read                                                                         |
+| Separate web / worker / migrate releases, Darkube + Supabase (§11)             | Second Dockerfile for the worker; migrations leave web start-up; new env vars validated in `env.ts` (011)                                                       |
+| Role-specific database URLs (§11)                                              | `env.ts` maps `DATABASE_URL_WEB` / `_WORKER` / `_MIGRATE` onto Prisma per process; plain `DATABASE_URL` stays valid for local work                              |
+| Worker reuses services (010)                                                   | Worker has its own env profile; `server-only` is aliased to an empty module when the worker is bundled, because it throws under plain Node                      |
+| Logical API reads (§9)                                                         | Pages read through services; `GET /api/calls`, `/api/calls/:id`, `/api/reports/issues` are thin handlers over the same services, with no extra business logic   |
+| Landing page                                                                   | `/` redirects to `/reports/issues`; sign-in success opens it                                                                                                    |
+| Stored eligibility (§9)                                                        | `IssueFinding.eligible` is written at publish and never recomputed, so expiry cannot change historical counts                                                   |
 
 ## Layout of the code
 
@@ -136,10 +141,11 @@ Type-only imports are always allowed. `npm run lint` fails on violations.
 
 ### Security
 
-- Passwords: bcrypt, 12 rounds. Session cookies carry a random token; the database stores its SHA-256.
-- Login is throttled per username (5 failures / 15 minutes) in `auth.service.ts`; swap the in-memory store for Redis when running several replicas.
+- Passwords: Argon2id (decision 008, tech spec §4). The starter's bcrypt (12 rounds) stays only until plan tasks M1-T4 and M1-T9 replace it. Session cookies carry a random token; the database stores its SHA-256.
+- Login is throttled in `auth.service.ts` with PostgreSQL-backed state (5 failures per account and 30 per source per 15 minutes, increasing delay; decision 008). The starter's in-memory per-username store is replaced in M1-T4.
 - Every server action authorises first and validates with zod before touching a service.
 - Pages guard their own data access (layouts and pages render in parallel).
+- Route handlers under `app/api/` authenticate themselves (session, organization, origin on unsafe methods): `src/proxy.ts` does not run for `/api/*`.
 - Server-only modules import `'server-only'`. Environment is read through `src/lib/env.ts`, never `process.env` in app code (the proxy is the one exception).
 - User-facing error messages come from `ServiceError` or zod; unexpected errors are logged and replaced by `t('errors.unexpected')`.
 
@@ -149,13 +155,11 @@ Type-only imports are always allowed. `npm run lint` fails on violations.
 - Strings go through `t()` / `tp()`. Numbers, dates and currency through `@/lib/format`.
 - The UI kit is written with logical Tailwind utilities (`ms- me- ps- pe- start- end- border-s border-e rounded-s rounded-e text-start text-end`) and logical overlay sides (`side="start" | "end"` on Tooltip, Popover, DropdownMenu, Sheet content). Keep new code in the same style.
 
-
 ### Persian and RTL
 
 - `npm run lint:rtl` rejects physical utilities (`ml- pl- left- text-left …`) and `side="left|right"`; it runs inside `lint:all`.
 - Directional icons flip: chevrons and arrows get `rtl:rotate-180`; panel icons get `rtl:-scale-x-100`.
 - Free-text input is normalised with `@/lib/persian` and gets `dir="auto"`. Inline Latin runs (usernames, codes, phones) are wrapped in `<Ltr>`. Iranian identifiers are checked with `@/lib/validators/iran`.
-
 
 ### UI
 

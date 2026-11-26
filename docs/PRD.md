@@ -48,27 +48,27 @@ Persian and Latin digits are accepted in identifiers, mobile numbers and call-ID
 
 What exists today:
 
-| Route          | Who       | What                                                                                  |
-| -------------- | --------- | ------------------------------------------------------------------------------------- |
-| `/login`       | everyone  | _(template)_ Username/password sign-in (cookie session, throttled after 5 failures)   |
-| `/`            | signed-in | _(template)_ Placeholder home                                                         |
-| `/admin/users` | Admin     | _(template)_ List, create, edit, activate/deactivate users, reset passwords           |
-| `/components`  | signed-in | _(template)_ Component gallery / visual regression surface; excluded from production  |
-| `/api/health`  | ops       | Readiness probe (database check), no auth                                             |
+| Route          | Who       | What                                                                                 |
+| -------------- | --------- | ------------------------------------------------------------------------------------ |
+| `/login`       | everyone  | _(template)_ Username/password sign-in (cookie session, throttled after 5 failures)  |
+| `/`            | signed-in | _(template)_ Placeholder home                                                        |
+| `/admin/users` | Admin     | _(template)_ List, create, edit, activate/deactivate users, reset passwords          |
+| `/components`  | signed-in | _(template)_ Component gallery / visual regression surface; excluded from production |
+| `/api/health`  | ops       | Readiness probe (database check), no auth                                            |
 
 Planned for Phase 1 (see `docs/specs/design-scope.md` for screens and states; paths are proposals):
 
-| Screen / endpoint                                 | What                                                                                                                                   |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| ورود به بازتاب (`/login`)                         | National ID + mobile + password; forced change of the operator-issued initial password; Persian-keyboard warning on password fields   |
-| گزارش مشکلات (`/reports/issues`, landing page)    | Analyzed-call total and issue groups ranked by distinct eligible calls for a Jalali date range; each rank opens the filtered call list |
-| فهرست تماس‌ها (`/calls`)                          | Search by call ID / filename / issue, filter by state, issue and date; removable issue filter; تاریخ بارگذاری label for fallback dates |
-| بارگذاری فایل‌های تماس (from `/calls`)            | Batch MP3 upload (≤ 50 files, ≤ 10 MiB each), per-file accepted / duplicate / rejected result, expected ready time                     |
-| جزئیات تماس (`/calls/[id]`)                       | Findings, AI scores, transcript + audio with timestamp seeking, retry, optional review, expiry notice                                  |
-| `POST /api/calls/uploads`                         | Streaming multipart upload of one MP3                                                                                                  |
-| `GET /api/calls`, `GET /api/calls/:id`            | Cursor-paged search; call detail with date source, state, expected ready time, audio/transcript availability                          |
-| `GET /api/calls/:id/audio`                        | Session-authorized same-origin Range playback (200/206/416), `private, no-store`                                                       |
-| `GET /api/reports/issues`                         | Report data for date bounds with drill-down filters                                                                                    |
+| Screen / endpoint                                                  | What                                                                                                                                   |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| ورود به بازتاب (`/login`)                                          | National ID + mobile + password; forced change of the operator-issued initial password; Persian-keyboard warning on password fields    |
+| گزارش مشکلات (`/reports/issues`, landing page; `/` redirects here) | Analyzed-call total and issue groups ranked by distinct eligible calls for a Jalali date range; each rank opens the filtered call list |
+| فهرست تماس‌ها (`/calls`)                                           | Search by call ID / filename / issue, filter by state, issue and date; removable issue filter; تاریخ بارگذاری label for fallback dates |
+| بارگذاری فایل‌های تماس (from `/calls`)                             | Batch MP3 upload (≤ 50 files, ≤ 10 MiB each), per-file accepted / duplicate / rejected result, expected ready time                     |
+| جزئیات تماس (`/calls/[id]`)                                        | Findings, AI scores, transcript + audio with timestamp seeking, retry, optional review, expiry notice                                  |
+| `POST /api/calls/uploads`                                          | Streaming multipart upload of one MP3                                                                                                  |
+| `GET /api/calls`, `GET /api/calls/:id`                             | Cursor-paged search; call detail with date source, state, expected ready time, audio/transcript availability                           |
+| `GET /api/calls/:id/audio`                                         | Session-authorized same-origin Range playback (200/206/416), `private, no-store`                                                       |
+| `GET /api/reports/issues`                                          | Report data for date bounds with drill-down filters                                                                                    |
 
 Sidebar (right side): **گزارش مشکلات**, **فهرست تماس‌ها**, **خروج**.
 
@@ -107,7 +107,7 @@ Planned (tech spec §5; opaque IDs, UTC instants, tenant-consistent composite ke
 - `ProcessingJob` — call, operation, attempt, state, next run, lease token/expiry, error code; one active job per call and operation
 - `TranscriptSegment` — revision, index, start/end ms, speaker (agent / customer / unknown), Persian text
 - `AnalysisRevision` — call, version, reason (initial / retry / reprocess / correction), parent, schema/model/prompt/rubric/taxonomy versions, status
-- `IssueCategory`, `IssueFinding` — stable tenant-scoped categories; finding with category, outcome, eligibility, explanation, evidence refs
+- `IssueCategory`, `IssueFinding` — stable tenant-scoped categories; finding with category, outcome, stored `eligible` flag (set at publish, never recomputed), explanation, evidence refs
 - `Score`, `Evidence` — one rating per criterion per revision, explanation, validated segment refs
 - `CorrectionAudit` — source/result revision, actor, field, previous/new structured value, time
 - Access log and operator audit — playback and transcript views; provisioning actions (no secrets)
@@ -138,7 +138,7 @@ Planned (tech spec §5; opaque IDs, UTC instants, tenant-consistent composite ke
 
 Phase 1, in the order of tech spec §12 ("Implementation order"):
 
-1. **Infrastructure proof** — disposable web + private worker on Darkube; Darkube → Supabase database/storage access; Range streaming; isolated inference run on synthetic audio; per-call feasibility gate; measure the real export bitrate.
+1. **Infrastructure proof** (runs in parallel with the vertical-slice work; it needs external accounts and samples, not application code) — disposable web + private worker on Darkube; Darkube → Supabase database/storage access; Range streaming; isolated inference run on synthetic audio; per-call feasibility gate; measure the real export bitrate.
 2. **Vertical slice** —
    1. Organization/membership auth replacing the template users (operator CLI, initial password, forced change, national-ID validator, Postgres rate limits), and removal of `/admin/users`, `/components` and seeded credentials from production (decision 008).
    2. Tenant scoping (decision 009).
