@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "worker:dev": "tsx --conditions=react-server src/worker/main.ts",
+    "worker:dev": "tsx --env-file-if-exists=.env --conditions=react-server src/worker/main.ts",
     "worker:build": "esbuild src/worker/main.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/worker.mjs",
     "worker:start": "node --conditions=react-server dist/worker.mjs",
     "lint": "eslint",
