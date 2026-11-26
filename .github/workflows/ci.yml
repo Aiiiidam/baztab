@@ -41,7 +41,7 @@ jobs:
         run: |
           test ! -d .next/server/app/admin
           test ! -d .next/server/app/components
-          ! grep -rn --include='*.ts' --include='*.tsx' --include='*.mjs' -e 'admin123' -e 'requireAdmin' -e 'bcryptjs' src prisma scripts
+          ! grep -rnw --include='*.ts' --include='*.tsx' --include='*.mjs' -e 'admin123' -e 'requireAdmin' -e 'bcryptjs' src prisma scripts
       - run: npm run worker:build
 
   integration:
