@@ -72,6 +72,8 @@ const schema = z.object({
   WORKER_LEASE_SECONDS: int(120),
   WORKER_POLL_SECONDS: int(5),
   WORKER_MAX_ATTEMPTS: int(3),
+  /** First retry delay; later ones grow ×4 up to 30 minutes. */
+  WORKER_BACKOFF_BASE_SECONDS: int(30),
   WORKER_SHUTDOWN_GRACE_SECONDS: int(30),
   WORKER_MAINTENANCE_SECONDS: int(300),
   WORKER_SCRATCH_DIR: z.string().optional(),

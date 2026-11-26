@@ -39,3 +39,51 @@ M0-T5.)
 - **Local tooling.** PostgreSQL 16 and FFmpeg are installed on the development machine with winget;
   Docker is not available there, so image builds are verified in CI only. The Playwright CDN is
   geo-blocked from the development network, so `PLAYWRIGHT_CHANNEL=msedge` drives the installed Edge.
+
+## M2–M5 — Upload, analysis, report, lifecycle (local workflow)
+
+- **Order.** The analysis schema (M3-T1) and the report predicate (M4-T1) landed together with the call
+  list (M2-T7), because the list shows issues, outcomes and review status from the active revision;
+  batch upload (M5-T1), retention (M5-T4) and ledger reconcile (M5-T5) landed with the worker because the
+  upload dialog and maintenance loop need them. Task IDs are unchanged.
+- **Transcripts are their own entity** (`Transcript` → `TranscriptSegment`) referenced by revisions
+  instead of belonging to one revision: corrections and retries reuse the same transcript, and the
+  retry checkpoint is "an unexpired transcript of the same model version".
+- **Upload reservation.** The call row in state `UPLOADING` plus its fingerprint and a `PENDING`
+  recording is the reservation; bytes go into `storage_ledger.reservedBytes` with one conditional
+  UPDATE; finalize moves them to committed in the transaction that queues the call and inserts the first
+  job. `reconcileReservations` (worker) finalizes a reservation whose object exists with the exact size,
+  otherwise deletes it and releases the bytes. The cheap fingerprint check runs before ffprobe, so an
+  exact re-upload is never probed.
+- **Fake inference engine** (`INFERENCE_ENGINE=fake`) is deterministic: the fixture's ID3 comment
+  `baztab-fake:<scenario>` picks a scripted Persian call (standard, escalated, multi-issue, insufficient
+  evidence, uncategorized, transient failure, invalid output, silence). It is refused in production unless
+  `INFERENCE_ALLOW_FAKE_IN_PRODUCTION=true` (synthetic staging only).
+- **Invalid model output** is a transient failure: retried with backoff within `WORKER_MAX_ATTEMPTS`,
+  then FAILED with `invalid_output` and تلاش دوباره offered. Invented evidence rejects the whole output.
+  A score that cites no agent-attributed segment is downgraded to شواهد ناکافی rather than rejected.
+- **Eligibility inputs are stored.** `IssueFinding.eligible` and `hasEvidence` are set at publish, so a
+  category correction after expiry (evidence rows deleted) still decides eligibility correctly.
+- **One report predicate** is a Prisma `IssueFindingWhereInput` (`eligibleFindingWhere`); the drill-down
+  filters calls with `findings: { some: <same predicate> }`. Integration tests assert each rank's count
+  equals its drill-down rows.
+- **Optimistic concurrency for review** is a guarded `UPDATE calls … WHERE activeRevisionId = <seen>` as
+  the first statement of the transaction; it also row-locks the call, so of two concurrent corrections
+  exactly one wins and the other gets the stale conflict. Confirming a review sets review metadata on the
+  active revision; it changes no finding.
+- **Real 404s.** The template's catch-all `(app)/loading.tsx` made every page stream, which turns
+  `notFound()` into a soft 200. It was removed; the list's skeleton lives in the `calls/(list)` route
+  group, so `/calls/[id]` answers a foreign or missing call with HTTP 404 (tech spec §4.6).
+- **Expiry hides at read time.** The call detail withholds transcript, evidence, reason text and
+  explanations as soon as `expiresAt` passes; the worker's deletion task then removes them. Jobs still
+  queued for an expired recording are cancelled.
+- **Hand-written SQL** (one-active-job partial index, ledger CHECKs, composite FKs on nullable columns)
+  is protected by `npm run lint:migrations`, because Prisma's generated drafts propose dropping it.
+- **Egress** is counted in-app (`egress_usage`, per UTC month) for playback and worker fetches, with a
+  70 % alert in the logs; provider metrics remain the authority (tech spec §10).
+- **Worker bootstrap.** `src/worker/main.ts` sets `PROCESS_ROLE=worker` before importing anything, then
+  starts `index.ts`; `--conditions=react-server` makes `server-only` an empty module (plan A7). The bundle
+  (`npm run worker:build`, esbuild) keeps packages external.
+- **E2E** runs the real dev server and the real worker against `E2E_DATABASE_URL`, with
+  `WORKER_BACKOFF_BASE_SECONDS=1`; each run provisions a fresh random organization so fixture uploads
+  never collide with earlier runs.

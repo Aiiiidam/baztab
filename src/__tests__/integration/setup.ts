@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { vi } from 'vitest';
 
 // Real database, real env schema; only the Next.js and logging edges are stubbed.

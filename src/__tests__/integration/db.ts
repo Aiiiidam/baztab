@@ -8,6 +8,8 @@ export async function resetDatabase(): Promise<void> {
   if (rows.length === 0) return;
   const tables = rows.map((row) => `"public"."${row.tablename}"`).join(', ');
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`);
+  // The migration seeds the single storage-ledger row; restore it.
+  await prisma.storageLedger.create({ data: { id: 1 } });
 }
 
 export { prisma };

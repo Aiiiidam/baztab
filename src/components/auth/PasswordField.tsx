@@ -56,6 +56,7 @@ export function PasswordField({
           dir="ltr"
           spellCheck={false}
           autoCapitalize="off"
+          // dir=ltr: the logical end padding is on the right, where the toggle sits (start of the RTL row).
           className="pe-10 text-start"
           aria-invalid={error || persianKeyboard ? true : undefined}
           aria-describedby={describedBy}
@@ -69,7 +70,7 @@ export function PasswordField({
         <button
           type="button"
           onClick={() => setVisible((value) => !value)}
-          className="absolute end-3 top-1/2 -translate-y-1/2 rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute start-3 top-1/2 -translate-y-1/2 rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={visible ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
           aria-pressed={visible}
         >

@@ -9,6 +9,7 @@ import {
 } from '@/lib/validators/organization';
 import { normalizeMobile } from '@/lib/validators/iran';
 import { hashPassword } from '@/services/auth.service';
+import { seedTaxonomy } from '@/services/taxonomy.service';
 
 /**
  * Operator commands (tech spec §4.1–4.3, decision 008): provision, revoke and
@@ -115,6 +116,7 @@ export async function provisionMember(input: {
       organization = await tx.organization.create({
         data: { nationalId, name, retentionDays: env.RETENTION_DAYS },
       });
+      await seedTaxonomy(tx, organization.id);
       await audit(tx, input.operator, 'organization.provision', {
         organizationId: organization.id,
       });

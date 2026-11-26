@@ -13,11 +13,12 @@ export async function fillSignIn(page: Page, credentials: Credentials) {
 
 /** Complete the forced change on /change-password. */
 export async function changeInitialPassword(page: Page, password = MEMBER_PASSWORD) {
-  await expect(page).toHaveURL(/\/change-password$/);
+  // Generous: the first sign-in of a run compiles the action and page in the dev server.
+  await expect(page).toHaveURL(/\/change-password$/, { timeout: 30_000 });
   await page.getByLabel(t('auth.changePassword.newPassword'), { exact: true }).fill(password);
   await page.getByLabel(t('auth.changePassword.confirmPassword'), { exact: true }).fill(password);
   await page.getByRole('button', { name: t('auth.changePassword.submit') }).click();
-  await page.waitForURL('/reports/issues');
+  await page.waitForURL('/reports/issues', { timeout: 30_000 });
 }
 
 /** Provision a fresh member, sign in, replace the initial password; returns the final credentials. */

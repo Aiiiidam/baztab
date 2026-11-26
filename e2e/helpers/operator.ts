@@ -8,8 +8,32 @@ import { PrismaClient } from '@prisma/client';
  * uses fresh random mobiles inside fixed synthetic organizations.
  */
 
-export const E2E_ORG = { nationalId: '10862059635', name: 'سازمان آزمون خودکار' };
-export const E2E_ORG_B = { nationalId: '01234567893', name: 'سازمان آزمون دوم' };
+const WEIGHTS = [29, 27, 23, 19, 17];
+
+/** A random, valid 11-digit organization national ID (legal-entity check digit). */
+export function randomNationalId(): string {
+  for (;;) {
+    const body = Array.from({ length: 10 }, (_, i) => (i === 0 ? 1 + randomInt(9) : randomInt(10)));
+    if (body.slice(3, 9).every((d) => d === 0)) continue;
+    const d = body[9] + 2;
+    const sum = body.reduce((acc, digit, i) => acc + (digit + d) * WEIGHTS[i % 5], 0);
+    const check = sum % 11 === 10 ? 0 : sum % 11;
+    return [...body, check].join('');
+  }
+}
+
+export type Org = { nationalId: string; name: string };
+
+/** A fresh synthetic organization per run, so fixture uploads never collide with earlier runs. */
+export function randomOrg(name = 'سازمان آزمون خودکار'): Org {
+  return { nationalId: randomNationalId(), name };
+}
+
+/** Shared by the specs of one run (the module is loaded once per worker). */
+export const E2E_ORG: Org = {
+  nationalId: process.env.E2E_ORG_ID ?? randomNationalId(),
+  name: 'سازمان آزمون خودکار',
+};
 /** Password members choose after the forced change. */
 export const MEMBER_PASSWORD = 'E2e-Orbit-Lamp-73';
 
@@ -34,7 +58,7 @@ function initialPasswordFrom(output: string): string {
 }
 
 /** A new member holding an operator-issued initial password. */
-export function provisionMember(org = E2E_ORG, mobile = randomMobile()): Credentials {
+export function provisionMember(org: Org = E2E_ORG, mobile = randomMobile()): Credentials {
   const output = operator([
     'provision',
     '--national-id',
