@@ -93,7 +93,7 @@ M0-T5.)
 - **Three images.** `Dockerfile` (web: standalone, non-root, ffprobe, no Prisma CLI, no migrations at
   start), `Dockerfile.worker` (esbuild bundle + pruned production `node_modules`, ffmpeg, health port
   3100, `--conditions=react-server`) and `Dockerfile.migrate` (Prisma CLI only, `DATABASE_URL_MIGRATE`).
-  Base images pin the `node:22-bookworm-slim` line; release tags and digests are pinned at deploy time
+  Base images pin the `node:26-bookworm-slim` line (the LTS that `.nvmrc` resolves to, so the lockfile written by npm 11 installs identically); release tags and digests are pinned at deploy time
   (M6-T6). Docker is not available on the development machine, so the images are built and smoke-tested
   in CI only.
 - **Compose** runs migrate → web + worker with a shared `recordings` volume, `STORAGE_DRIVER=fs`

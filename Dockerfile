@@ -3,7 +3,7 @@
 # upload validation. Migrations are NOT run here; see Dockerfile.migrate.
 
 # ─── Base ─────────────────────────────────────────────────────────────────
-FROM node:22-bookworm-slim AS base
+FROM node:26-bookworm-slim AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 \
     npm_config_fetch_retries=5 \
