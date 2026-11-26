@@ -21,6 +21,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/services/**'],
+      // The OpenAI evaluation engine never runs against the database; unit tests cover it.
+      exclude: ['src/services/inference/openai.ts'],
       reporter: ['text', 'lcov'],
       thresholds: { statements: 70, branches: 60, functions: 75 },
     },

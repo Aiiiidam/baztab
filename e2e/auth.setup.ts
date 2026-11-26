@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test as setup } from '@playwright/test';
 import { signInAsNewMember } from './helpers/auth';
@@ -15,6 +15,7 @@ setup('provision a member and sign in', async ({ page }) => {
     await clearRateLimits();
     const member = await signInAsNewMember(page);
     // Specs in other worker processes read the run's organization from here.
+    mkdirSync(authDir, { recursive: true });
     writeFileSync(memberFile, JSON.stringify(member));
     await disconnect();
   }
