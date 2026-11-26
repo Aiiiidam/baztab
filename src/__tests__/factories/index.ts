@@ -11,6 +11,7 @@ export const organizationFactory = Factory.define<Organization>(({ sequence }) =
   nationalId: '10380284790',
   name: `سازمان ${sequence}`,
   isActive: true,
+  state: 'ACTIVE',
   retentionDays: 10,
   createdAt: new Date('2026-11-01T08:00:00Z'),
   updatedAt: new Date('2026-11-01T08:00:00Z'),

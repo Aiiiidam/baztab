@@ -5,6 +5,10 @@
  *   npm run operator -- reset     --national-id 10380284790 --mobile 09123456789
  *   npm run operator -- revoke    --national-id 10380284790 --mobile 09123456789
  *   npm run operator -- revoke-org --national-id 10380284790
+ *   npm run operator -- reprocess --call <callId>
+ *   npm run operator -- activate-candidate --call <callId> --revision <revisionId>
+ *   npm run operator -- discard-candidate --call <callId> --revision <revisionId>
+ *   npm run operator -- delete-org --national-id 10380284790   (re-run until it finishes)
  *
  * Connects with DATABASE_URL_MIGRATE (the release/operator role) when set,
  * otherwise DATABASE_URL for local work; never the web role. The operator name
@@ -26,6 +30,10 @@ Commands:
   reset       --national-id <id> --mobile <mobile>
   revoke      --national-id <id> --mobile <mobile>
   revoke-org  --national-id <id>
+  reprocess   --call <callId>
+  activate-candidate --call <callId> --revision <revisionId>
+  discard-candidate  --call <callId> --revision <revisionId>
+  delete-org  --national-id <id>   (two-phase, resumable; exits 1 until finished)
 
 Options:
   --operator <name>   Name recorded in the audit log (default: OPERATOR_NAME or OS user)`;
@@ -38,6 +46,8 @@ async function main(): Promise<number> {
       name: { type: 'string' },
       mobile: { type: 'string' },
       operator: { type: 'string' },
+      call: { type: 'string' },
+      revision: { type: 'string' },
       help: { type: 'boolean', short: 'h' },
     },
   });
@@ -107,6 +117,44 @@ async function main(): Promise<number> {
         console.log(
           `Organization revoked: ${result.organizationId}; sessions revoked: ${result.sessionsRevoked}`,
         );
+        return 0;
+      }
+      case 'reprocess': {
+        const result = await service.reprocessCall({ operator, callId: need(values.call, 'call') });
+        console.log(
+          `Reprocess ${result.created ? 'queued' : 'already queued'}: job ${result.jobId}`,
+        );
+        return 0;
+      }
+      case 'activate-candidate':
+      case 'discard-candidate': {
+        const args = {
+          operator,
+          callId: need(values.call, 'call'),
+          revisionId: need(values.revision, 'revision'),
+        };
+        if (command === 'activate-candidate') await service.activateCandidate(args);
+        else await service.discardCandidate(args);
+        console.log(
+          `Candidate ${command === 'activate-candidate' ? 'activated' : 'discarded'}: ${args.revisionId}`,
+        );
+        return 0;
+      }
+      case 'delete-org': {
+        const result = await service.deleteOrganization({
+          operator,
+          nationalId: need(nationalId, 'national-id'),
+        });
+        console.log(
+          `Organization ${result.organizationId}: ${result.objectsDeleted} objects deleted, ${result.objectsFailed} failed`,
+        );
+        if (!result.finished) {
+          console.error(
+            'Deletion incomplete: access is already revoked. Re-run the command to finish.',
+          );
+          return 1;
+        }
+        console.log('Organization deleted.');
         return 0;
       }
       default:

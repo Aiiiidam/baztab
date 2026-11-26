@@ -12,16 +12,25 @@ datasource db {
 // reference them with a composite foreign key: a child row can never point at
 // another organization's parent.
 
+enum OrganizationState {
+  ACTIVE
+  /// Offboarding phase 1 done: no access; objects and rows are being removed (resumable).
+  DELETING
+  /// Offboarding finished: only this tombstone row and the operator audit remain.
+  DELETED
+}
+
 model Organization {
-  id            String   @id @default(cuid())
+  id            String            @id @default(cuid())
   /// Normalized 11-digit organization national ID (شناسه ملی). A string: leading zeros matter.
-  nationalId    String   @unique @db.VarChar(11)
+  nationalId    String            @unique @db.VarChar(11)
   name          String
-  isActive      Boolean  @default(true)
+  isActive      Boolean           @default(true)
+  state         OrganizationState @default(ACTIVE)
   /// Audio and transcript retention in whole days from acceptance (pilot 10, tech spec §10).
-  retentionDays Int      @default(10)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  retentionDays Int               @default(10)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   memberships Membership[]
   calls       Call[]
