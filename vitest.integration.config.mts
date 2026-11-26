@@ -18,6 +18,12 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 60_000,
+    coverage: {
+      provider: 'v8',
+      include: ['src/services/**'],
+      reporter: ['text', 'lcov'],
+      thresholds: { statements: 70, branches: 60, functions: 75 },
+    },
   },
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },

@@ -11,7 +11,8 @@ export default defineConfig({
     setupFiles: ['src/__tests__/setup.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/services/**', 'src/lib/**', 'src/actions/**'],
+      // Services run against real PostgreSQL; their gate is in vitest.integration.config.mts.
+      include: ['src/lib/**', 'src/actions/**'],
       exclude: [
         'src/**/*.d.ts',
         'src/__tests__/**',

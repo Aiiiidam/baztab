@@ -112,3 +112,14 @@ M0-T5.)
   the six-hour engineering target).
 - **M6-T3 (database roles)** is covered by `scripts/supabase-roles.sql` from the parallel infrastructure
   session (dedicated `baztab` schema, web/worker/migrate roles); not duplicated here.
+
+## Owner decisions recorded 2026-11-26
+
+- **D6 (font).** The project owner confirmed that the bundled YekanBakh font may be redistributed with
+  the application; it ships in the web image as is.
+- **D7 (recovery targets).** Accepted as proposed: recovery point at most 24 hours of data loss,
+  recovery time within one business day. M6-T7 sizes backups and the restore drill against these.
+- **Sample metadata (M0-T6, metadata part).** The 10 supplied recordings are valid MP3 at 8 kbps, mean
+  1.6 minutes (p95 2.5). At 50 calls a day the 800 MB budget holds about 151 days, so 90-day retention
+  (D9) fits without a larger storage plan at this rate. The 8 kbps bitrate is the main risk for Persian
+  transcription quality.
