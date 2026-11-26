@@ -106,4 +106,27 @@ describe('parseEnv', () => {
       'worker',
     );
   });
+
+  it('refuses the OpenAI engine in production and requires its key elsewhere (decision 014)', () => {
+    const production = {
+      NODE_ENV: 'production',
+      PROCESS_ROLE: 'worker',
+      DATABASE_URL_WORKER: LOCAL,
+      STORAGE_DRIVER: 's3',
+      STORAGE_ENDPOINT: 'https://s3.example',
+      STORAGE_BUCKET: 'recordings',
+      STORAGE_ACCESS_KEY_ID: 'id',
+      STORAGE_SECRET_ACCESS_KEY: 'secret',
+      INFERENCE_ENGINE: 'openai',
+      OPENAI_API_KEY: 'sk-test',
+    };
+    expect(() => parseEnv(production)).toThrow(/INFERENCE_ENGINE=openai .* development/);
+    expect(() => parseEnv({ DATABASE_URL: LOCAL, INFERENCE_ENGINE: 'openai' })).toThrow(
+      /OPENAI_API_KEY is required/,
+    );
+    expect(
+      parseEnv({ DATABASE_URL: LOCAL, INFERENCE_ENGINE: 'openai', OPENAI_API_KEY: 'k' })
+        .OPENAI_ANALYSIS_MODEL,
+    ).toBe('gpt-5.5');
+  });
 });

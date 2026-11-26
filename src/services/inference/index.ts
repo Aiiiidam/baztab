@@ -1,16 +1,20 @@
 import { env } from '@/lib/env';
 import { createFakeEngine } from './fake';
+import { createOpenAiEngine } from './openai';
 import type { InferenceEngine } from './types';
 
 /**
- * The configured self-managed engine. Only the deterministic fake exists until
- * the model and host are chosen (plan M3-T8, blocked by D1/D2/D10); a real
- * adapter implements the same Transcriber/Analyzer interfaces.
+ * The configured engine. `fake` is deterministic (development, tests,
+ * synthetic staging); `openai` is for development and evaluation only and is
+ * refused in production (decision 014). The self-managed production adapter
+ * (plan M3-T8) implements the same Transcriber/Analyzer interfaces.
  */
 export function createEngine(): InferenceEngine {
   switch (env.INFERENCE_ENGINE) {
     case 'fake':
       return createFakeEngine();
+    case 'openai':
+      return createOpenAiEngine();
   }
 }
 

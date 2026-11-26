@@ -3,7 +3,8 @@ import type { Speaker } from '@prisma/client';
 /**
  * Self-managed inference behind two interfaces (tech spec §2, §8, decision
  * 010). Adapters run inside the worker or on a private host; customer audio
- * and transcripts never go to an external AI API. The analysis step receives
+ * and transcripts never go to an external AI API in a deployed environment
+ * (the OpenAI engine is development and evaluation only, decision 014). The analysis step receives
  * transcript segments as untrusted data plus a fixed task schema — no tools,
  * no network.
  */

@@ -78,8 +78,14 @@ const schema = z.object({
   WORKER_MAINTENANCE_SECONDS: int(300),
   WORKER_SCRATCH_DIR: z.string().optional(),
   WORKER_HEALTH_PORT: z.coerce.number().int().positive().optional(),
-  INFERENCE_ENGINE: z.enum(['fake']).default('fake'),
+  INFERENCE_ENGINE: z.enum(['fake', 'openai']).default('fake'),
   INFERENCE_ALLOW_FAKE_IN_PRODUCTION: booleanString,
+  /** Development and evaluation only (decision 014): refused in production. */
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_BASE_URL: z.url().default('https://api.openai.com/v1'),
+  OPENAI_TRANSCRIBE_MODEL: z.string().min(1).default('gpt-4o-transcribe-diarize'),
+  OPENAI_ANALYSIS_MODEL: z.string().min(1).default('gpt-5.5'),
+  OPENAI_TIMEOUT_SECONDS: int(300),
 
   // ─── Logging ───────────────────────────────────────────────────────────
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
@@ -161,6 +167,16 @@ export function parseEnv(source: EnvSource, options: ParseOptions = {}): Env {
     problems.push(
       'INFERENCE_ENGINE=fake produces synthetic results; set INFERENCE_ALLOW_FAKE_IN_PRODUCTION=true only on synthetic staging',
     );
+  }
+  if (data.INFERENCE_ENGINE === 'openai') {
+    // Tech spec §2: customer audio and transcripts never go to an external AI API in production.
+    if (productionRuntime) {
+      problems.push(
+        'INFERENCE_ENGINE=openai sends audio to an external API and is for development and evaluation only (tech spec §2, decision 014)',
+      );
+    }
+    if (!data.OPENAI_API_KEY)
+      problems.push('OPENAI_API_KEY is required when INFERENCE_ENGINE=openai');
   }
 
   if (problems.length > 0) {
