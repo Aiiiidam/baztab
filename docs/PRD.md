@@ -6,8 +6,7 @@
 > decisions and update it when a change is product-visible (new module, route, behaviour, data
 > model). Keep it a reference, not a changelog. Full detail lives in `docs/specs/`
 > ([index](specs/README.md)); when this file and the technical specification disagree, the
-> technical specification wins. Lines marked _(template)_ describe code inherited from the starter
-> that Phase 1 replaces.
+> technical specification wins.
 
 ## What it is
 
@@ -32,9 +31,9 @@ workspace and can do every task:
 Members sign in with **organization national ID (شناسه ملی سازمان, 11 digits) + mobile + password**.
 Data is isolated per organization; scope always comes from the session.
 
-_(template)_ The starter ships `ADMIN` / `USER` roles, username sign-in and `/admin/users`. They stay
-only until the membership auth slice replaces them, and must not reach the production build
-(decision [008](decisions/008-organization-membership-auth.md)).
+Operators work through `npm run operator -- provision | reset | revoke | revoke-org`; each command
+is audited without secrets. The starter's username accounts, roles, `/admin/users`, `/components`
+gallery and seeded admin were removed (decision [008](decisions/008-organization-membership-auth.md)).
 
 ## Locale
 
@@ -48,13 +47,14 @@ Persian and Latin digits are accepted in identifiers, mobile numbers and call-ID
 
 What exists today:
 
-| Route          | Who       | What                                                                                 |
-| -------------- | --------- | ------------------------------------------------------------------------------------ |
-| `/login`       | everyone  | _(template)_ Username/password sign-in (cookie session, throttled after 5 failures)  |
-| `/`            | signed-in | _(template)_ Placeholder home                                                        |
-| `/admin/users` | Admin     | _(template)_ List, create, edit, activate/deactivate users, reset passwords          |
-| `/components`  | signed-in | _(template)_ Component gallery / visual regression surface; excluded from production |
-| `/api/health`  | ops       | Readiness probe (database check), no auth                                            |
+| Route              | Who                 | What                                                                                                              |
+| ------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `/login`           | everyone            | ورود به بازتاب: national ID + mobile + password, Persian-keyboard warning, forgotten-password help                |
+| `/change-password` | must-change session | Forced replacement of the operator-issued initial password; every other route redirects here until it is replaced |
+| `/`                | member              | Redirects to `/reports/issues`                                                                                    |
+| `/reports/issues`  | member              | گزارش مشکلات (landing page)                                                                                       |
+| `/calls`           | member              | فهرست تماس‌ها                                                                                                     |
+| `/api/health`      | ops                 | Readiness probe (database check), no auth                                                                         |
 
 Planned for Phase 1 (see `docs/specs/design-scope.md` for screens and states; paths are proposals):
 
@@ -84,23 +84,22 @@ Sidebar (right side): **گزارش مشکلات**, **فهرست تماس‌ها*
 - **Retention:** audio, transcript, explanations and evidence are removed after the configured number of days (pilot **10**, target 90 after a storage upgrade). Categories, outcomes, ratings, the original filename and the access log remain; historical counts do not change. Call detail shows the removal date before expiry.
 - **Storage budget:** 800 MB app-managed budget on Supabase Free; alert at 70 %, pause uploads at 100 % with a clear message.
 
-_(template)_ Today: deactivating a user or resetting their password ends all their sessions; an admin
-cannot change their own role or deactivate themselves; sessions last `SESSION_MAX_AGE_DAYS` (default 7).
+- **Sign-in:** an operator reset or revoke ends every session of the member at once; revoking an organization ends all of its sessions. Sessions expire after 24 h idle or 7 days absolute. An initial password expires after 7 days and cannot be chosen again as the new password.
 
 ## Data model
 
 <!-- One line per model. Point to prisma/schema.prisma for fields. -->
 
-Today (`prisma/schema.prisma`), _(template)_:
-
-- `User` — `username` (unique), `passwordHash`, `fullName`, `role` (`ADMIN` \| `USER`), `isActive`, `lastLoginAt`
-- `Session` — `tokenHash` (SHA-256 of the cookie token, unique), `expiresAt`, cascades on user delete
-
-Planned (tech spec §5; opaque IDs, UTC instants, tenant-consistent composite keys):
+Today (`prisma/schema.prisma`; opaque IDs, UTC instants, tenant-consistent composite keys):
 
 - `Organization` — unique normalized national ID (string, leading zeros kept), name, active, retention days
 - `Membership` — organization, normalized mobile (unique per organization), Argon2id hash, must-change flag, initial-password expiry, activation/revocation
-- `Session` — membership, token hash, idle (24 h) and absolute (7 d) expiry
+- `MemberSession` — membership (composite tenant FK), token hash, idle (24 h) and absolute (7 d) expiry
+- `AuthRateLimit` — hashed account/source key, failure count, window, expiry
+- `OperatorAudit` — operator, action, target IDs, structured detail (no secrets)
+
+Planned (tech spec §5):
+
 - `Call` — organization, accepted-at, nullable filename date, effective date, date source, original filename (restricted), state, active revision, row version
 - `Recording` — call, generated object key, bytes, duration, content type, expiry, storage state
 - `RecordingFingerprint` — organization + SHA-256 (unique), owning call; deleted at expiry
@@ -114,14 +113,11 @@ Planned (tech spec §5; opaque IDs, UTC instants, tenant-consistent composite ke
 
 ## Server actions
 
-| Action                | Auth  | Description                                       |
-| --------------------- | ----- | ------------------------------------------------- |
-| `loginAction`         | none  | _(template)_ Validate credentials, open a session |
-| `logoutAction`        | user  | Revoke the current session                        |
-| `createUserAction`    | admin | _(template)_ Create a user                        |
-| `updateUserAction`    | admin | _(template)_ Change name / role                   |
-| `setUserActiveAction` | admin | _(template)_ Activate or deactivate               |
-| `resetPasswordAction` | admin | _(template)_ Set a new password, revoke sessions  |
+| Action                 | Auth                | Description                                                         |
+| ---------------------- | ------------------- | ------------------------------------------------------------------- |
+| `signInAction`         | none                | Validate identifiers and password, throttle, open a session         |
+| `changePasswordAction` | must-change session | Replace the initial password, clear the flag, revoke other sessions |
+| `logoutAction`         | member              | Revoke the current session                                          |
 
 ## Non-functional
 

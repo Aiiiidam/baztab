@@ -1,26 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { isNavItemActive, pageTitleFor, visibleNavGroups } from '@/lib/navigation';
+import { isNavItemActive, NAV_ITEMS, pageTitleFor } from '@/lib/navigation';
 import { sessionCookieOptions } from '@/lib/session-cookie';
 import { t } from '@/lib/t';
 
 describe('navigation', () => {
-  it('hides admin groups from plain users and shows them to admins', () => {
-    const userTitles = visibleNavGroups({ role: 'USER' }).map((g) => g.title);
-    const adminTitles = visibleNavGroups({ role: 'ADMIN' }).map((g) => g.title);
-    expect(userTitles).not.toContain(t('nav.group.admin'));
-    expect(adminTitles).toContain(t('nav.group.admin'));
+  it('lists the report and the call list, in that order, for every member', () => {
+    expect(NAV_ITEMS.map((item) => item.href)).toEqual(['/reports/issues', '/calls']);
+    expect(NAV_ITEMS.map((item) => item.label)).toEqual([t('nav.reports'), t('nav.calls')]);
   });
 
-  it('matches the home item only on the exact path', () => {
-    expect(isNavItemActive('/', '/')).toBe(true);
-    expect(isNavItemActive('/', '/admin/users')).toBe(false);
-    expect(isNavItemActive('/admin/users', '/admin/users/123')).toBe(true);
-    expect(isNavItemActive('/admin', '/administration')).toBe(false);
+  it('matches a nav item on its own path and below it, not on look-alikes', () => {
+    expect(isNavItemActive('/calls', '/calls')).toBe(true);
+    expect(isNavItemActive('/calls', '/calls/abc')).toBe(true);
+    expect(isNavItemActive('/calls', '/callsign')).toBe(false);
+    expect(isNavItemActive('/', '/calls')).toBe(false);
   });
 
-  it('derives the header title from the longest matching item', () => {
-    expect(pageTitleFor('/')).toBe(t('nav.home'));
-    expect(pageTitleFor('/admin/users')).toBe(t('nav.users'));
+  it('derives the header title from explicit routes, then nav items', () => {
+    expect(pageTitleFor('/reports/issues')).toBe(t('nav.reports'));
+    expect(pageTitleFor('/calls')).toBe(t('nav.calls'));
+    expect(pageTitleFor('/calls/ckabc123')).toBe(t('callDetail.title'));
     expect(pageTitleFor('/nothing-here')).toBe('');
   });
 });

@@ -10,16 +10,16 @@ import { t } from '@/lib/t';
 
 /**
  * Authenticated area. Every route under (app) gets the shell and a verified
- * user. Pages still call requireAuth()/requireAdmin() before fetching data,
+ * member. Pages still call requireAuth() before fetching data,
  * because Next.js renders layouts and pages in parallel; the call is cached
  * per request so it costs nothing.
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const [user, cookieStore] = await Promise.all([requireAuth(), cookies()]);
+  const [member, cookieStore] = await Promise.all([requireAuth(), cookies()]);
   const sidebarCollapsed = cookieStore.get(SIDEBAR_COLLAPSED_COOKIE)?.value === 'true';
 
   return (
-    <AuthProvider user={user}>
+    <AuthProvider member={member}>
       <SidebarProvider defaultCollapsed={sidebarCollapsed}>
         <a
           href="#main-content"

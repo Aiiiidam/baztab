@@ -8,9 +8,11 @@ const globalForPrisma = globalThis as unknown as { prismaGlobal?: PrismaClient }
 export const prisma =
   globalForPrisma.prismaGlobal ??
   new PrismaClient({
+    // The URL for this process role (DATABASE_URL_WEB / _WORKER, or DATABASE_URL locally).
+    datasourceUrl: env.DATABASE_URL,
     log: env.PRISMA_LOG_QUERIES ? ['query', 'warn', 'error'] : ['warn', 'error'],
-    // Pool tuning belongs in DATABASE_URL:
-    //   ?connection_limit=10&pool_timeout=30&connect_timeout=10
+    // Pool tuning belongs in the URL:
+    //   ?connection_limit=3&pool_timeout=30&connect_timeout=10
   });
 
 // Reuse one client across hot reloads in development.

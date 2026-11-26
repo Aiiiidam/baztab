@@ -6,6 +6,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/__tests__/**/*.test.ts'],
+    // Real-database tests run with npm run test:integration.
+    exclude: ['src/__tests__/integration/**'],
     setupFiles: ['src/__tests__/setup.ts'],
     coverage: {
       provider: 'v8',

@@ -8,7 +8,7 @@ import { DEFAULT_LOCALE, LOCALES } from '../src/lib/locale';
  * overflow, and the sidebar on the inline-start edge.
  */
 const profile = LOCALES[DEFAULT_LOCALE];
-const ROUTES = ['/', '/components'] as const;
+const ROUTES = ['/reports/issues', '/calls'] as const;
 
 function readLayout(page: Page) {
   return page.evaluate(() => {

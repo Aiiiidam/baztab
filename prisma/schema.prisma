@@ -7,42 +7,99 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  USER
+// ─── ORGANIZATIONS AND MEMBERSHIPS (tech spec §4, §5; decisions 008, 009) ───
+// Tenant-owned parents declare @@unique([organizationId, id]) so children can
+// reference them with a composite foreign key: a child row can never point at
+// another organization's parent.
+
+model Organization {
+  id            String   @id @default(cuid())
+  /// Normalized 11-digit organization national ID (شناسه ملی). A string: leading zeros matter.
+  nationalId    String   @unique @db.VarChar(11)
+  name          String
+  isActive      Boolean  @default(true)
+  /// Audio and transcript retention in whole days from acceptance (pilot 10, tech spec §10).
+  retentionDays Int      @default(10)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships Membership[]
+
+  @@map("organizations")
 }
 
-// ─── USER ──────────────────────────────────────────
-model User {
-  id           String    @id @default(cuid())
-  username     String    @unique
-  passwordHash String
-  fullName     String
-  role         UserRole  @default(USER)
-  isActive     Boolean   @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+model Membership {
+  id                       String    @id @default(cuid())
+  organizationId           String
+  /// Normalized `09…` mobile; unique per organization, not globally.
+  mobile                   String    @db.VarChar(11)
+  /// Argon2id PHC string. Holds the initial password's hash until the member replaces it.
+  passwordHash             String
+  mustChangePassword       Boolean   @default(true)
+  initialPasswordExpiresAt DateTime?
+  passwordChangedAt        DateTime?
+  activatedAt              DateTime  @default(now())
+  revokedAt                DateTime?
+  lastSignInAt             DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
-  sessions Session[]
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sessions     MemberSession[]
 
-  @@index([role])
-  @@map("users")
+  @@unique([organizationId, mobile])
+  @@unique([organizationId, id])
+  @@map("memberships")
 }
 
-// ─── SESSION ───────────────────────────────────────
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  /// SHA-256 hex of the raw token stored in the cookie. The raw token is never persisted.
-  tokenHash String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model MemberSession {
+  id                String   @id @default(cuid())
+  organizationId    String
+  membershipId      String
+  /// SHA-256 hex of the raw cookie token. The raw token is never persisted.
+  tokenHash         String   @unique
+  idleExpiresAt     DateTime
+  absoluteExpiresAt DateTime
+  lastSeenAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
 
-  @@index([userId])
+  membership Membership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Cascade)
+
+  @@index([organizationId, membershipId])
+  @@index([absoluteExpiresAt])
+  @@map("member_sessions")
+}
+
+enum RateLimitScope {
+  ACCOUNT
+  SOURCE
+}
+
+/// Failed sign-in counters (decision 008). Survives restarts and replicas; rows expire.
+model AuthRateLimit {
+  /// SHA-256 of scope + identifier, so no national ID, mobile or address is stored here.
+  key           String         @id
+  scope         RateLimitScope
+  failures      Int
+  windowStart   DateTime
+  lastFailureAt DateTime
+  expiresAt     DateTime
+
   @@index([expiresAt])
-  @@map("sessions")
+  @@map("auth_rate_limits")
 }
 
-// --- Add your domain models below ---
+/// Operator CLI actions. Holds identifiers and structured detail only, never secrets.
+/// No foreign keys: the record outlives a deleted organization.
+model OperatorAudit {
+  id             String   @id @default(cuid())
+  operator       String
+  action         String
+  organizationId String?
+  membershipId   String?
+  detail         Json?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@map("operator_audit")
+}

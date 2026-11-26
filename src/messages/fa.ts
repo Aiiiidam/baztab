@@ -13,115 +13,88 @@ export const fa = {
   'shell.openMenu': 'منوی ناوبری',
   'shell.expandSidebar': 'باز کردن منوی کناری',
   'shell.collapseSidebar': 'بستن منوی کناری',
-  'shell.adminBadge': 'مدیر',
-  'shell.adminRole': 'مدیر سیستم',
+  'shell.accountMenu': 'حساب کاربری',
 
   // ── Navigation (sidebar) ───────────────────────────────────
   'nav.menuTitle': 'منوی ناوبری',
-  'nav.group.dashboard': 'داشبورد',
-  'nav.group.tools': 'ابزارها',
-  'nav.group.admin': 'مدیریت',
-  'nav.home': 'خانه',
-  'nav.components': 'کامپوننت‌ها',
-  'nav.users': 'کاربران',
-  'nav.comingSoon': 'به‌زودی',
+  'nav.reports': 'گزارش مشکلات',
+  'nav.calls': 'فهرست تماس‌ها',
 
   // ── Theme toggle ───────────────────────────────────────────
   'theme.switchToLight': 'حالت روشن',
   'theme.switchToDark': 'حالت تاریک',
 
-  // ── Auth ───────────────────────────────────────────────────
+  // ── Sign-in (ورود به بازتاب) ───────────────────────────────
   'auth.logout': 'خروج',
-  'auth.login.title': 'ورود به سامانه',
-  'auth.login.username': 'نام کاربری',
-  'auth.login.usernamePlaceholder': 'نام کاربری خود را وارد کنید',
+  'auth.login.title': 'ورود به بازتاب',
+  'auth.login.subtitle': 'با شناسه ملی سازمان، شماره همراه و رمز عبور وارد شوید.',
+  'auth.login.nationalId': 'شناسه ملی سازمان',
+  'auth.login.mobile': 'شماره همراه',
   'auth.login.password': 'رمز عبور',
-  'auth.login.passwordPlaceholder': 'رمز عبور خود را وارد کنید',
   'auth.login.showPassword': 'نمایش رمز عبور',
   'auth.login.hidePassword': 'پنهان کردن رمز عبور',
   'auth.login.submit': 'ورود',
-  'auth.login.submitting': 'در حال ورود...',
-  'auth.errors.missingCredentials': 'نام کاربری و رمز عبور الزامی است',
-  'auth.errors.invalidCredentials': 'نام کاربری یا رمز عبور اشتباه است',
+  'auth.login.submitting': 'در حال ورود…',
+  'auth.login.forgotPassword': 'رمز عبور را فراموش کرده‌اید؟',
+  'auth.login.forgotPasswordHelp':
+    'بازتاب رمز عبور را با پیامک یا ایمیل بازیابی نمی‌کند. با پشتیبانی بازتاب تماس بگیرید تا پس از تأیید هویت، رمز عبور اولیهٔ تازه‌ای برایتان صادر شود. با صدور رمز تازه، رمز قبلی و همهٔ نشست‌های باز شما از کار می‌افتد.',
+  'auth.errors.invalidCredentials': 'شناسه ملی سازمان، شماره همراه یا رمز عبور درست نیست.',
+  'auth.errors.tooManyAttempts':
+    'تلاش‌های ناموفق زیاد است. {minutes} دقیقه دیگر دوباره امتحان کنید.',
+  'auth.errors.initialPasswordExpired':
+    'رمز عبور اولیهٔ شما منقضی شده است. برای دریافت رمز اولیهٔ تازه با پشتیبانی بازتاب تماس بگیرید.',
+  'auth.errors.passwordChangeNotRequired': 'رمز عبور شما پیش‌تر تغییر کرده است.',
+  'auth.errors.accessFailure': 'ورود ممکن نشد. چند لحظه بعد دوباره تلاش کنید.',
+  'auth.errors.nationalIdRequired': 'شناسه ملی سازمان را وارد کنید',
+  'auth.errors.nationalIdInvalid': 'شناسه ملی سازمان باید ۱۱ رقم معتبر باشد',
+  'auth.errors.mobileRequired': 'شماره همراه را وارد کنید',
+  'auth.errors.mobileInvalid': 'شماره همراه معتبر نیست؛ مانند ۰۹۱۲۳۴۵۶۷۸۹',
 
-  // ── Home ───────────────────────────────────────────────────
-  'home.title': 'داشبورد',
-  'home.welcome': 'خوش آمدید، {name}',
-  'home.gettingStarted.title': 'شروع کنید',
-  'home.gettingStarted.description':
-    'این داشبورد آماده سفارشی‌سازی است. ماژول‌های خود را اضافه کنید و محتوای این صفحه را به‌روزرسانی نمایید.',
+  // ── Forced password change ─────────────────────────────────
+  'auth.changePassword.title': 'تعیین رمز عبور جدید',
+  'auth.changePassword.description':
+    'رمز عبوری که پشتیبانی به شما داده، فقط برای اولین ورود است. برای ادامه، رمز عبور جدیدی انتخاب کنید.',
+  'auth.changePassword.newPassword': 'رمز عبور جدید',
+  'auth.changePassword.confirmPassword': 'تکرار رمز عبور جدید',
+  'auth.changePassword.submit': 'ذخیره و ورود',
+  'auth.changePassword.submitting': 'در حال ذخیره…',
 
-  // ── Component library (header title only; the page itself is a dev showcase) ──
-  'components.title': 'کتابخانه کامپوننت‌ها',
+  // ── Password policy (sign-in and change-password) ──────────
+  'password.rules':
+    'دست‌کم ۱۰ نویسه، فقط با حروف انگلیسی، رقم‌های انگلیسی و نمادها (مانند ! @ # -)',
+  'password.keyboardWarning': 'صفحه‌کلید روی فارسی است. رمز عبور را با صفحه‌کلید انگلیسی بنویسید.',
+  'password.errors.tooShort': 'رمز عبور باید دست‌کم {min} نویسه باشد',
+  'password.errors.tooLong': 'رمز عبور حداکثر {max} نویسه است',
+  'password.errors.persianLetters':
+    'رمز عبور حروف فارسی دارد. صفحه‌کلید را انگلیسی کنید و دوباره بنویسید.',
+  'password.errors.persianDigits':
+    'رمز عبور رقم فارسی دارد. صفحه‌کلید را انگلیسی کنید و رقم‌ها را دوباره بنویسید.',
+  'password.errors.nonAscii':
+    'رمز عبور فقط می‌تواند حروف انگلیسی، رقم‌های انگلیسی و نمادهای استاندارد داشته باشد',
+  'password.errors.matchesIdentifier':
+    'رمز عبور نباید با شناسه ملی سازمان یا شماره همراه یکسان باشد',
+  'password.errors.common': 'این رمز عبور رایج و حدس‌زدنی است. رمز دیگری انتخاب کنید.',
+  'password.errors.mismatch': 'تکرار رمز عبور با رمز عبور جدید یکسان نیست',
+  'password.errors.reusedInitial':
+    'رمز عبور جدید نباید همان رمز اولیه باشد. رمز دیگری انتخاب کنید.',
 
-  // ── Admin › Users ──────────────────────────────────────────
-  'users.title': 'مدیریت کاربران',
-  'users.subtitle': 'ایجاد، ویرایش و غیرفعال‌سازی حساب‌های کاربری سامانه',
-  'users.empty': 'هنوز کاربری ثبت نشده است.',
-  'users.you': '(شما)',
-  'users.role.ADMIN': 'مدیر',
-  'users.role.USER': 'کاربر',
-  'users.status.active': 'فعال',
-  'users.status.inactive': 'غیرفعال',
-  'users.column.fullName': 'نام کامل',
-  'users.column.username': 'نام کاربری',
-  'users.column.role': 'نقش',
-  'users.column.status': 'وضعیت',
-  'users.column.lastLogin': 'آخرین ورود',
-  'users.column.actions': 'عملیات',
-  'users.rowActions': 'عملیات برای {name}',
-  'users.action.new': 'کاربر جدید',
-  'users.action.edit': 'ویرایش',
-  'users.action.resetPassword': 'بازنشانی رمز عبور',
-  'users.action.deactivate': 'غیرفعال‌سازی',
-  'users.action.activate': 'فعال‌سازی',
-  'users.action.cancel': 'انصراف',
-  'users.action.save': 'ذخیره',
-  'users.action.create': 'ایجاد کاربر',
-  'users.action.reset': 'بازنشانی',
-  'users.field.fullName': 'نام کامل',
-  'users.field.username': 'نام کاربری',
-  'users.field.usernameHint': 'حروف لاتین، عدد، نقطه، خط تیره و زیرخط',
-  'users.field.password': 'رمز عبور',
-  'users.field.newPassword': 'رمز عبور جدید',
-  'users.field.role': 'نقش',
-  'users.field.ownRoleHint': 'نقش خودتان قابل تغییر نیست',
-  'users.create.title': 'کاربر جدید',
-  'users.create.description': 'حساب کاربری جدیدی برای دسترسی به سامانه بسازید.',
-  'users.edit.title': 'ویرایش کاربر',
-  'users.reset.title': 'بازنشانی رمز عبور',
-  'users.reset.description':
-    'رمز جدیدی برای «{name}» تعیین کنید. همهٔ نشست‌های فعال این کاربر بسته می‌شود.',
-  'users.toast.created': 'کاربر ایجاد شد',
-  'users.toast.saved': 'تغییرات ذخیره شد',
-  'users.toast.passwordReset': 'رمز عبور بازنشانی شد؛ کاربر باید دوباره وارد شود',
-  'users.toast.deactivated': 'کاربر غیرفعال شد',
-  'users.toast.activated': 'کاربر فعال شد',
-  'users.errors.usernameTaken': 'این نام کاربری قبلاً استفاده شده است',
-  'users.errors.notFound': 'کاربر یافت نشد',
-  'users.errors.cannotChangeOwnRole': 'نمی‌توانید نقش خود را تغییر دهید',
-  'users.errors.cannotDeactivateSelf': 'نمی‌توانید حساب خود را غیرفعال کنید',
+  // ── Issue report (گزارش مشکلات) ───────────────────────────
+  'report.title': 'گزارش مشکلات',
+
+  // ── Call list (فهرست تماس‌ها) ─────────────────────────────
+  'calls.title': 'فهرست تماس‌ها',
+
+  // ── Call detail (جزئیات تماس) ─────────────────────────────
+  'callDetail.title': 'جزئیات تماس',
 
   // ── Validation (zod messages, shared by server and client) ─
   'validation.required': 'این فیلد الزامی است',
   'validation.invalid': 'ورودی نامعتبر است',
-  'validation.usernameRequired': 'نام کاربری الزامی است',
-  'validation.passwordRequired': 'رمز عبور الزامی است',
-  'validation.usernameMin': 'نام کاربری باید حداقل {min} کاراکتر باشد',
-  'validation.usernameMax': 'نام کاربری حداکثر {max} کاراکتر است',
-  'validation.usernameChars': 'فقط حروف لاتین، عدد، نقطه، خط تیره و زیرخط مجاز است',
-  'validation.passwordMin': 'رمز عبور باید حداقل {min} کاراکتر باشد',
-  'validation.passwordMax': 'رمز عبور حداکثر {max} کاراکتر است',
-  'validation.fullNameMin': 'نام کامل الزامی است',
-  'validation.fullNameMax': 'نام کامل حداکثر {max} کاراکتر است',
-  'validation.roleInvalid': 'نقش نامعتبر است',
-  'validation.userIdInvalid': 'شناسه کاربر نامعتبر است',
+  'validation.passwordRequired': 'رمز عبور را وارد کنید',
 
   // ── Generic action errors ──────────────────────────────────
   'errors.unexpected': 'خطای غیرمنتظره‌ای رخ داد. لطفاً دوباره تلاش کنید.',
   'errors.notFound': 'موردی یافت نشد',
-  'auth.errors.tooManyAttempts':
-    'تلاش‌های ناموفق زیاد است. {minutes} دقیقه دیگر دوباره امتحان کنید.',
 
   // ── Error boundary ─────────────────────────────────────────
   'error.title': 'خطایی رخ داد',
@@ -133,7 +106,7 @@ export const fa = {
   'notFound.code': '۴۰۴',
   'notFound.title': 'صفحه یافت نشد',
   'notFound.description': 'صفحه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.',
-  'notFound.backHome': 'بازگشت به خانه',
+  'notFound.backHome': 'بازگشت به گزارش مشکلات',
 
   // ── UI primitives ──────────────────────────────────────────
   'ui.close': 'بستن',
