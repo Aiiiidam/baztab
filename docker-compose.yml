@@ -1,5 +1,16 @@
 # Local stack. `npm run db:up` starts only Postgres for `npm run dev`;
-# `docker compose up --build` runs the whole thing the way production does.
+# `docker compose up --build` runs migrate → web + worker with the same images
+# that deploy (decision 011), on synthetic data: local file storage shared by
+# web and worker, and the deterministic fake inference engine.
+x-app-env: &app-env
+  NODE_ENV: production
+  APP_ORIGIN: http://localhost:3000
+  DATABASE_URL: postgresql://postgres:postgres@db:5432/app?schema=public
+  STORAGE_DRIVER: fs
+  STORAGE_FS_ROOT: /data/storage
+  STORAGE_ALLOW_FS_IN_PRODUCTION: 'true'
+  LOG_LEVEL: info
+
 services:
   db:
     image: postgres:16-alpine
@@ -19,6 +30,16 @@ services:
       timeout: 3s
       retries: 10
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    environment:
+      DATABASE_URL_MIGRATE: postgresql://postgres:postgres@db:5432/app?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+
   web:
     build:
       context: .
@@ -27,14 +48,32 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
-    env_file:
-      - .env
     environment:
-      # Inside the compose network the database host is the service name.
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/app?schema=public
+      <<: *app-env
+      PROCESS_ROLE: web
+    volumes:
+      - recordings:/data/storage
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: 'baztab-worker'
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      PROCESS_ROLE: worker
+      INFERENCE_ENGINE: fake
+      INFERENCE_ALLOW_FAKE_IN_PRODUCTION: 'true'
+    volumes:
+      - recordings:/data/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   db-data:
+  recordings:

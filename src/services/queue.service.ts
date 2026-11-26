@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Prisma, type JobTrigger, type ProcessingJob } from '@prisma/client';
+import { zonedDate, zonedTimeToInstant } from '@/lib/call-date';
 import { env } from '@/lib/env';
 import { prisma } from '@/lib/prisma';
 import { utc } from '@/services/sql';
@@ -290,4 +291,23 @@ export async function queueStats(now = new Date()) {
       ? Math.round((now.getTime() - oldest.enqueuedAt.getTime()) / 1000)
       : 0,
   };
+}
+
+/**
+ * Deadline risk (tech spec §7, §11): calls accepted before today's Tehran
+ * midnight must be ready by 09:00. After 03:00 (the six-hour engineering
+ * target) any of them still queued or processing is a risk worth an alert.
+ */
+export async function deadlineRisk(
+  now = new Date(),
+): Promise<{ atRisk: number; checking: boolean }> {
+  const today = zonedDate(now, env.REPORT_TIME_ZONE);
+  const midnight = zonedTimeToInstant(today, 0, env.REPORT_TIME_ZONE);
+  const targetPassed =
+    now.getTime() >= zonedTimeToInstant(today, 3, env.REPORT_TIME_ZONE).getTime();
+  if (!targetPassed) return { atRisk: 0, checking: false };
+  const atRisk = await prisma.call.count({
+    where: { state: { in: ['QUEUED', 'PROCESSING'] }, acceptedAt: { lt: midnight } },
+  });
+  return { atRisk, checking: true };
 }

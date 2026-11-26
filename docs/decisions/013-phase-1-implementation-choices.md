@@ -87,3 +87,28 @@ M0-T5.)
 - **E2E** runs the real dev server and the real worker against `E2E_DATABASE_URL`, with
   `WORKER_BACKOFF_BASE_SECONDS=1`; each run provisions a fresh random organization so fixture uploads
   never collide with earlier runs.
+
+## M6 — Deployment artifacts (local part)
+
+- **Three images.** `Dockerfile` (web: standalone, non-root, ffprobe, no Prisma CLI, no migrations at
+  start), `Dockerfile.worker` (esbuild bundle + pruned production `node_modules`, ffmpeg, health port
+  3100, `--conditions=react-server`) and `Dockerfile.migrate` (Prisma CLI only, `DATABASE_URL_MIGRATE`).
+  Base images pin the `node:22-bookworm-slim` line; release tags and digests are pinned at deploy time
+  (M6-T6). Docker is not available on the development machine, so the images are built and smoke-tested
+  in CI only.
+- **Compose** runs migrate → web + worker with a shared `recordings` volume, `STORAGE_DRIVER=fs`
+  (`STORAGE_ALLOW_FS_IN_PRODUCTION=true`) and the fake engine — synthetic data only.
+- **Boot-time env validation** in `src/instrumentation.ts`: an invalid or unsafe environment (e.g.
+  `SKIP_AUTH=true` with `NODE_ENV=production`) exits the web process at start instead of failing the
+  first request. CI asserts both the build and the image refuse it.
+- **Health.** `/api/health/live` is process-only (container liveness); `/api/health` is readiness:
+  database plus "latest shipped migration applied". On Supabase the runtime roles cannot read
+  `_prisma_migrations` (scripts/supabase-roles.sql, from the infrastructure work), so readiness reports
+  `schema: unknown` there and stays healthy; granting the web role `SELECT` on that table would enable
+  the check.
+- **Ops signals** are structured log lines from the worker's maintenance pass: queue depth, oldest queued
+  age, lease reclaims, storage usage ratio, `storage_budget_alert`, `egress_budget_alert`, failed object
+  deletions, and `deadline_risk` (calls accepted before today's Tehran midnight still pending after 03:00,
+  the six-hour engineering target).
+- **M6-T3 (database roles)** is covered by `scripts/supabase-roles.sql` from the parallel infrastructure
+  session (dedicated `baztab` schema, web/worker/migrate roles); not duplicated here.

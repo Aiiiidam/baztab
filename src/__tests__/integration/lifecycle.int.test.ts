@@ -24,7 +24,6 @@ afterEach(() => setStorageForTests(undefined));
 
 const engine = createFakeEngine();
 const RANGE = { from: '2020-01-01', to: '2030-12-31' };
-const DAY = 24 * 60 * 60 * 1000;
 
 async function readyCall(
   fixture = '20261020-escalated.mp3',

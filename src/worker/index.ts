@@ -81,7 +81,9 @@ async function maintenanceLoop() {
     try {
       const report = await runMaintenance();
       const stats = await queue.queueStats();
-      log.info({ ...report, ...stats }, 'Maintenance pass');
+      const risk = await queue.deadlineRisk();
+      log.info({ ...report, ...stats, deadlineAtRisk: risk.atRisk }, 'Maintenance pass');
+      if (risk.atRisk > 0) log.warn({ atRisk: risk.atRisk }, 'deadline_risk');
     } catch (err) {
       log.error({ err }, 'Maintenance pass failed');
     }

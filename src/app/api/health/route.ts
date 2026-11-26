@@ -1,25 +1,20 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
+import { checkReadiness } from '@/services/health.service';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Liveness + readiness probe. Excluded from the auth proxy (see src/proxy.ts)
- * so orchestrators get a real 200/503 instead of a redirect.
+ * Readiness probe (tech spec §11): database reachable and schema at least the
+ * latest migration this build ships. Excluded from the auth proxy so
+ * orchestrators get a real 200/503. Liveness is /api/health/live.
  */
 export async function GET() {
-  const checks: Record<string, 'ok' | 'error'> = {};
-
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    checks.database = 'ok';
-  } catch (err) {
-    logger.error({ err }, 'Health check: database connectivity failed');
-    checks.database = 'error';
-  }
-
-  const healthy = Object.values(checks).every((value) => value === 'ok');
+  const checks = await checkReadiness();
+  if (checks.database === 'error') logger.error('Health check: database connectivity failed');
+  if (checks.schema === 'behind')
+    logger.error('Health check: database schema is behind this release');
+  const healthy = checks.database === 'ok' && checks.schema !== 'behind';
   return NextResponse.json(
     { status: healthy ? 'healthy' : 'degraded', checks, timestamp: new Date().toISOString() },
     { status: healthy ? 200 : 503, headers: { 'Cache-Control': 'no-store' } },
