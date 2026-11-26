@@ -56,6 +56,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Migration names only, for the schema-readiness check (/api/health).
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations ./prisma/migrations
+# Supabase root CA for verified TLS to the pooler (sslcert=/app/prisma/supabase-ca.crt).
+COPY --from=builder --chown=nextjs:nodejs /app/prisma/supabase-ca.crt ./prisma/supabase-ca.crt
 
 USER nextjs
 EXPOSE 3000
