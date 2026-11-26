@@ -1,0 +1,43 @@
+{
+  "description": "Synthetic labels for the evaluation harness (plan M0-T2). Human-style labels for the fixtures in e2e/fixtures/audio; no real recording. Transcripts are the reference wording; issues list distinct categories with outcomes; scores follow rubric-v1.",
+  "rubricVersion": "rubric-v1",
+  "calls": [
+    {
+      "file": "20261019_093015_09121234567.mp3",
+      "transcript": "سلام، پشتیبانی امضای دیجیتال، بفرمایید. سلام، گواهی امضای من منقضی شده و نمی‌دانم چطور تمدیدش کنم. گواهی برای شرکت ثبت شده یا شخصی است؟ برای شرکت است. درخواست تمدید را برایتان ثبت کردم؛ از منوی گواهی‌ها هم می‌توانید پیگیری کنید. بله، پیام تمدید آمد. ممنون.",
+      "issues": [{ "categoryKey": "certificate_issue", "outcome": "RESOLVED" }],
+      "scores": { "UNDERSTANDING": "MET", "CORRECT_ACTION": "MET", "CLEAR_CLOSURE": "PARTLY_MET" }
+    },
+    {
+      "file": "20261020-escalated.mp3",
+      "transcript": "سلام، پشتیبانی امضای دیجیتال، در خدمتم. می‌خواهم قرارداد را امضا کنم ولی کد تأیید پیامکی برایم نمی‌آید. شماره همراه ثبت‌شده همان شمارهٔ فعلی شماست؟ چند بار درخواست کد دادید؟ بله همان است، سه بار درخواست دادم و پیامکی نیامد. مشکل از سرویس پیامک است؛ موضوع را به تیم فنی ارجاع دادم. تا دو ساعت دیگر با شما تماس می‌گیرند. تا آن زمان امضا ممکن نیست. باشه، منتظر تماس می‌مانم.",
+      "issues": [{ "categoryKey": "otp_not_received", "outcome": "UNRESOLVED" }],
+      "scores": { "UNDERSTANDING": "MET", "CORRECT_ACTION": "MET", "CLEAR_CLOSURE": "MET" }
+    },
+    {
+      "file": "تماس پشتیبانی بدون تاریخ.mp3",
+      "transcript": "سلام، پشتیبانی امضای دیجیتال، بفرمایید. اول اینکه نمی‌توانم وارد حسابم بشوم. رمز را بازنشانی کردم؛ الان دوباره امتحان کنید. وارد شدم. ولی وقتی سند را امضا می‌کنم خطا می‌دهد. این خطا را همکاران فنی بررسی می‌کنند؛ برایتان تیکت ثبت کردم. باز هم از حساب بیرون پرید و وارد نمی‌شوم. دوباره بازنشانی کردم و ورود درست شد. نتیجهٔ تیکت امضا پیامک می‌شود.",
+      "issues": [
+        { "categoryKey": "login_failed", "outcome": "RESOLVED" },
+        { "categoryKey": "signing_failed", "outcome": "UNRESOLVED" }
+      ],
+      "scores": { "UNDERSTANDING": "PARTLY_MET", "CORRECT_ACTION": "MET", "CLEAR_CLOSURE": "MET" }
+    },
+    {
+      "file": "20261021 insufficient.mp3",
+      "transcript": "الو صدا قطع و وصل می‌شود سند امضا نمی‌شه قطع شد",
+      "issues": [],
+      "scores": {
+        "UNDERSTANDING": "INSUFFICIENT_EVIDENCE",
+        "CORRECT_ACTION": "INSUFFICIENT_EVIDENCE",
+        "CLEAR_CLOSURE": "INSUFFICIENT_EVIDENCE"
+      }
+    },
+    {
+      "file": "uncategorized.mp3",
+      "transcript": "سلام، پشتیبانی امضای دیجیتال. پرینتر بعد از امضا سند را چاپ نمی‌کند. تنظیمات چاپ را با هم بررسی کردیم و درست شد. حالا چاپ می‌شود، ممنون.",
+      "issues": [],
+      "scores": { "UNDERSTANDING": "MET", "CORRECT_ACTION": "MET", "CLEAR_CLOSURE": "MET" }
+    }
+  ]
+}
